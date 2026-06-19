@@ -1,25 +1,56 @@
 ﻿@using Platform.SDK.Components.BibleComponents.Verses
 
 @* ── Picker toolbar ──────────────────────────────────────────────── *@
-<div class="row g-3 mb-4">
-    <div class="col-12 col-md-3">
-        <VersionPicker />
+<div class="bible-picker-shell">
+    <div class="bible-picker-glow" aria-hidden="true"></div>
+
+    <div class="bible-picker-header">
+        <div>
+            <span class="bible-picker-eyebrow">Choose your passage</span>
+            <h3 class="bible-picker-title">Bible Reader</h3>
+        </div>
+
+        <div class="bible-picker-mark" aria-hidden="true">
+            ✦
+        </div>
     </div>
-    <div class="col-12 col-md-3">
-        <BookPicker />
-    </div>
-    <div class="col-12 col-md-2">
-        <ChapterPicker />
-    </div>
-    <div class="col-12 col-md-3">
-        <VersePicker />
-    </div>
-    <div class="col-12 col-md-1 d-flex align-items-end">
-        <button class="btn btn-primary w-100"
-                @onclick="ReadPassageAsync"
-                disabled="@(!CanRead)">
-            Read
-        </button>
+
+    <div class="row g-3 bible-picker-grid">
+        <div class="col-12 col-md-3">
+            <section class="picker-card">
+                <span class="picker-label">Version</span>
+                <VersionPicker />
+            </section>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <section class="picker-card">
+                <span class="picker-label">Book</span>
+                <BookPicker />
+            </section>
+        </div>
+
+        <div class="col-12 col-md-2">
+            <section class="picker-card">
+                <span class="picker-label">Chapter</span>
+                <ChapterPicker />
+            </section>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <section class="picker-card">
+                <span class="picker-label">Verse</span>
+                <VersePicker />
+            </section>
+        </div>
+
+        <div class="col-12 col-md-1 d-flex align-items-end">
+            <button class="read-passage-button w-100"
+                    @onclick="ReadPassageAsync"
+                    disabled="@(!CanRead)">
+                Read
+            </button>
+        </div>
     </div>
 </div>
 

@@ -1,0 +1,256 @@
+.bible-picker-shell {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.75rem;
+    padding: clamp(1.25rem, 2.4vw, 2rem);
+    border-radius: 28px;
+    background:
+            radial-gradient(circle at top left, rgba(255, 184, 77, 0.24), transparent 34%),
+            radial-gradient(circle at bottom right, rgba(255, 111, 49, 0.14), transparent 32%),
+            linear-gradient(135deg, #fffaf3 0%, #ffffff 52%, #fff3e5 100%);
+    border: 1px solid rgba(255, 140, 66, 0.2);
+    box-shadow:
+            0 18px 56px rgba(47, 31, 18, 0.1),
+            0 8px 22px rgba(255, 123, 36, 0.08);
+    isolation: isolate;
+}
+
+.bible-picker-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 8px;
+    background: linear-gradient(180deg, #ffb84d 0%, #ff7a1a 48%, #f15a24 100%);
+    border-radius: 28px 0 0 28px;
+    z-index: 1;
+}
+
+.bible-picker-glow {
+    position: absolute;
+    top: -110px;
+    right: -110px;
+    width: 240px;
+    height: 240px;
+    border-radius: 999px;
+    background: rgba(255, 184, 77, 0.24);
+    filter: blur(4px);
+    z-index: -1;
+}
+
+.bible-picker-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.35rem;
+}
+
+.bible-picker-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-bottom: 0.45rem;
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 122, 26, 0.12);
+    color: #c75211;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.bible-picker-title {
+    margin: 0;
+    color: #2f2118;
+    font-size: clamp(1.55rem, 3vw, 2.45rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.045em;
+}
+
+.bible-picker-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ffb84d 0%, #ff7a1a 100%);
+    color: #ffffff;
+    font-size: 1.25rem;
+    box-shadow: 0 12px 24px rgba(255, 122, 26, 0.24);
+}
+
+.bible-picker-grid {
+    position: relative;
+    z-index: 2;
+}
+
+.picker-field {
+    height: 100%;
+    padding: 0.9rem;
+    border-radius: 20px;
+    background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 250, 243, 0.88));
+    border: 1px solid rgba(255, 140, 66, 0.16);
+    box-shadow: 0 10px 28px rgba(47, 31, 18, 0.06);
+    transition:
+            transform 160ms ease,
+            box-shadow 160ms ease,
+            border-color 160ms ease,
+            background 160ms ease;
+}
+
+.picker-field:hover,
+.picker-field:focus-within {
+    transform: translateY(-2px);
+    border-color: rgba(255, 122, 26, 0.36);
+    background:
+            linear-gradient(180deg, #ffffff, #fff7ed);
+    box-shadow:
+            0 16px 36px rgba(47, 31, 18, 0.1),
+            0 8px 18px rgba(255, 122, 26, 0.08);
+}
+
+.picker-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #9a4b17;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* Native select/input styling inside child picker components */
+.picker-field ::deep(select),
+.picker-field ::deep(input),
+.picker-field ::deep(.form-select),
+.picker-field ::deep(.form-control) {
+    width: 100%;
+    min-height: 2.75rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 122, 26, 0.2);
+    background-color: #ffffff;
+    color: #34261d;
+    font-weight: 700;
+    box-shadow: none;
+    transition:
+            border-color 160ms ease,
+            box-shadow 160ms ease,
+            background-color 160ms ease;
+}
+
+.picker-field ::deep(select:focus),
+.picker-field ::deep(input:focus),
+.picker-field ::deep(.form-select:focus),
+.picker-field ::deep(.form-control:focus) {
+    border-color: rgba(255, 122, 26, 0.62);
+    box-shadow:
+            0 0 0 0.22rem rgba(255, 122, 26, 0.14),
+            0 8px 20px rgba(255, 122, 26, 0.08);
+    outline: none;
+}
+
+/* Fluent UI web component styling if your pickers use FluentSelect/FluentCombobox */
+.picker-field ::deep(fluent-select),
+.picker-field ::deep(fluent-combobox),
+.picker-field ::deep(fluent-text-field),
+.picker-field ::deep(fluent-number-field) {
+    width: 100%;
+}
+
+.picker-field ::deep(fluent-select::part(control)),
+.picker-field ::deep(fluent-combobox::part(control)),
+.picker-field ::deep(fluent-text-field::part(control)),
+.picker-field ::deep(fluent-number-field::part(control)) {
+    min-height: 2.75rem;
+    border-radius: 15px;
+    border-color: rgba(255, 122, 26, 0.22);
+    background: #ffffff;
+    color: #34261d;
+    font-weight: 700;
+}
+
+.picker-field ::deep(fluent-select:focus-within::part(control)),
+.picker-field ::deep(fluent-combobox:focus-within::part(control)),
+.picker-field ::deep(fluent-text-field:focus-within::part(control)),
+.picker-field ::deep(fluent-number-field:focus-within::part(control)) {
+    border-color: rgba(255, 122, 26, 0.62);
+    box-shadow:
+            0 0 0 0.22rem rgba(255, 122, 26, 0.14),
+            0 8px 20px rgba(255, 122, 26, 0.08);
+}
+
+.read-passage-button {
+    min-height: 4.8rem;
+    border: 0;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #ffb84d 0%, #ff7a1a 48%, #f15a24 100%);
+    color: #ffffff;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    box-shadow:
+            0 16px 30px rgba(255, 122, 26, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    transition:
+            transform 160ms ease,
+            box-shadow 160ms ease,
+            filter 160ms ease,
+            opacity 160ms ease;
+}
+
+.read-passage-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: saturate(1.08);
+    box-shadow:
+            0 20px 40px rgba(255, 122, 26, 0.34),
+            inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.read-passage-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow:
+            0 10px 24px rgba(255, 122, 26, 0.26),
+            inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.read-passage-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+    background: linear-gradient(135deg, #d8c7b6 0%, #c8b29d 100%);
+    box-shadow: none;
+}
+
+@media (max-width: 767.98px) {
+    .bible-picker-shell {
+        border-radius: 22px;
+        padding: 1.25rem;
+    }
+
+    .bible-picker-shell::before {
+        width: 6px;
+        border-radius: 22px 0 0 22px;
+    }
+
+    .bible-picker-header {
+        margin-bottom: 1rem;
+    }
+
+    .bible-picker-mark {
+        width: 2.65rem;
+        height: 2.65rem;
+        border-radius: 16px;
+    }
+
+    .picker-field {
+        padding: 0.85rem;
+        border-radius: 18px;
+    }
+
+    .read-passage-button {
+        min-height: 3.25rem;
+        border-radius: 18px;
+    }
+}

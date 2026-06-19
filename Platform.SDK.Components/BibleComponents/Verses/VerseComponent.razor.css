@@ -1,3 +1,44 @@
+/* ... existing code ... */
+
+.verse-content {
+    position: relative;
+    color: #3f342c;
+    font-size: clamp(1.12rem, 2vw, 1.35rem);
+    line-height: 1.85;
+    letter-spacing: -0.01em;
+}
+
+.verse-content ::deep(p) {
+    margin-bottom: 1rem;
+}
+
+.verse-content ::deep(p:last-child) {
+    margin-bottom: 0;
+}
+
+.verse-content ::deep(.label),
+.verse-content ::deep(.chapter),
+.verse-content ::deep(.verse),
+.verse-content ::deep(sup) {
+    color: #d96016;
+    font-weight: 800;
+}
+
+.verse-content::before {
+    content: "“";
+    position: absolute;
+    top: -1.15rem;
+    left: -0.25rem;
+    color: rgba(255, 122, 26, 0.12);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 7rem;
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+}
+
+
+
 .verse-component {
     width: 100%;
     margin-top: 1.5rem;
