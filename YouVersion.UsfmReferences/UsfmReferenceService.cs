@@ -133,6 +133,7 @@ public sealed class UsfmReferenceService : IUsfmReferenceService
             }
         }
 
+        
         number = 0;
         stem = string.Empty;
         return false;

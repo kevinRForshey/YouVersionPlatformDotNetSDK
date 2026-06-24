@@ -60,9 +60,6 @@ internal sealed partial class HighlightClient(
         if (versionId <= 0)
             throw new ArgumentOutOfRangeException(nameof(versionId), versionId, "Version id must be greater than zero.");
 
-        if (string.IsNullOrWhiteSpace(usfm))
-            throw new ArgumentException("USFM passage id is required.", nameof(usfm));
-
         if (!Enum.IsDefined(color))
             throw new ArgumentOutOfRangeException(nameof(color), color, "Highlight color is invalid.");
 
@@ -71,7 +68,7 @@ internal sealed partial class HighlightClient(
         var payload = new CreateHighlightRequest
         {
             VersionId = versionId,
-            Usfm = normalizedUsfm,
+            Usfm = ToNormalizedUsfm(usfm),
             Color = color.ToString().ToLowerInvariant()
         };
         using var content = JsonContent.Create(payload);
@@ -84,9 +81,9 @@ internal sealed partial class HighlightClient(
 
         var result = highlight ?? throw new YouVersionApiException(
             System.Net.HttpStatusCode.OK,
-            $"Create highlight for '{normalizedUsfm}' returned an empty response body.");
+            $"Create highlight for '{ToNormalizedUsfm(usfm)}' returned an empty response body.");
 
-        logger.LogDebug("Created highlight {HighlightId} for {Usfm}.", result.Id, normalizedUsfm);
+        logger.LogDebug("Created highlight {HighlightId} for {Usfm}.", result.Id, ToNormalizedUsfm(usfm));
         return result;
     }
 

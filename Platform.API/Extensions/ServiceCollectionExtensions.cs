@@ -49,6 +49,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AppKeyDelegatingHandler>();
         services.AddTransient<OutboundRateLimitingHandler>();
 
+        // Register USFM reference service as singleton (stateless, thread-safe)
+        services.TryAddSingleton<IUsfmReferenceService, UsfmReferenceService>();
+
         RegisterTypedClient<IBibleClient, BibleClient>(services);
         RegisterTypedClient<IPassageClient, PassageClient>(services);
         RegisterTypedClient<IHighlightClient, HighlightClient>(services);
@@ -86,8 +89,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<OutboundRateLimitingHandler>();
 
         // Register USFM reference service as singleton (stateless, thread-safe)
-        services.TryAddSingleton<YouVersion.UsfmReferences.IUsfmReferenceService,
-            YouVersion.UsfmReferences.UsfmReferenceService>();
+        services.TryAddSingleton<IUsfmReferenceService, UsfmReferenceService>();
 
         RegisterTypedClient<IBibleClient, BibleClient>(services);
         RegisterTypedClient<IPassageClient, PassageClient>(services);

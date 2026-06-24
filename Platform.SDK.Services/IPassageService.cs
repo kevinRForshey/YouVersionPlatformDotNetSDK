@@ -1,4 +1,5 @@
 using Platform.API.Models;
+using YouVersion.UsfmReferences;
 
 namespace Platform.SDK.Services
 {
@@ -6,7 +7,7 @@ namespace Platform.SDK.Services
     {
         Task<Passage> GetPassageAsync(
             int versionId,
-            string usfm,
+            Reference reference,
             PassageRequestOptions? options = null,
             CancellationToken cancellationToken = default);
     }

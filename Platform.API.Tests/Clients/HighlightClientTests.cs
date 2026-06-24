@@ -118,18 +118,8 @@ public sealed class HighlightClientTests
     public async Task CreateHighlightAsync_ThrowsArgumentOutOfRangeException_WhenVersionIdIsNotPositive()
     {
         var client = BuildClient(HttpStatusCode.Created, HighlightJson);
-        var act = () => client.CreateHighlightAsync(0, "JHN.3.16", HighlightColor.Yellow);
+        var act = () => client.CreateHighlightAsync(0, TestReferences.John316, HighlightColor.Yellow);
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task CreateHighlightAsync_ThrowsArgumentException_WhenUsfmIsInvalid(string usfm)
-    {
-        var client = BuildClient(HttpStatusCode.Created, HighlightJson);
-        var act = () => client.CreateHighlightAsync(3034, usfm, HighlightColor.Yellow);
-        await act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -137,7 +127,7 @@ public sealed class HighlightClientTests
     {
         var client = BuildClient(HttpStatusCode.Created, HighlightJson);
         var invalidColor = (HighlightColor)999;
-        var act = () => client.CreateHighlightAsync(3034, "JHN.3.16", invalidColor);
+        var act = () => client.CreateHighlightAsync(3034, TestReferences.John316, invalidColor);
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 

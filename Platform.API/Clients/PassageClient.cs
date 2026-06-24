@@ -27,9 +27,6 @@ internal sealed partial class PassageClient(
         if (versionId <= 0)
             throw new ArgumentOutOfRangeException(nameof(versionId), versionId, "Version id must be greater than zero.");
 
-        if (string.IsNullOrWhiteSpace(usfm))
-            throw new ArgumentException("USFM passage id is required.", nameof(usfm));
-
         var resolvedOptions = options ?? PassageRequestOptions.Default;
         var normalizedUsfm = usfm.ToString();
         var url = BuildPassageUrl(versionId, normalizedUsfm, resolvedOptions);
