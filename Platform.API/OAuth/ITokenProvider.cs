@@ -1,12 +1,8 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Platform.API.OAuth;
 
 /// <summary>
 /// Abstraction for storing and retrieving the current OAuth token.
 /// Implement this interface to control where tokens are persisted
-/// (e.g., in-memory, encrypted file, secure device storage).
 /// </summary>
 public interface ITokenProvider
 {

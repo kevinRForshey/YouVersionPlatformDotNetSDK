@@ -37,5 +37,7 @@ public sealed record BibleVersionSummary
     [JsonPropertyName("language_tag")]
     public string LanguageTag { get; init; } = string.Empty;
 
-    public string? Copyright { get; set; }
+    /// <summary>Gets the copyright notice for this version, if provided by the API.</summary>
+    [JsonPropertyName("copyright")]
+    public string? Copyright { get; init; }
 }

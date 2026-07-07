@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Platform.API.Models.Models;
+namespace Platform.API.Models;
 
 /// <summary>
 /// Represents a single verse within a Bible chapter.
@@ -21,9 +21,12 @@ public sealed record Verse
     [JsonPropertyName("human")]
     public string Human { get; init; } = string.Empty;
     
-    /// <summary>
-    /// Holds the actual text of the verse. This is the content that will be displayed to users when they read the verse. It may contain formatting or special characters depending on the source of the verse text.
-    /// </summary>
+    /// <summary>Gets the verse's text content.</summary>
+    /// <remarks>
+    /// Only populated when sourced from <c>IPassageClient</c>. Verses returned from the
+    /// <c>/index</c> endpoint's book/chapter/verse structure carry no scripture text, so this
+    /// will be <see cref="string.Empty"/> in that case.
+    /// </remarks>
     [JsonPropertyName("text")]
     public string Text { get; init; } = string.Empty;
 }

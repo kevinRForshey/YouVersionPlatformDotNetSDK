@@ -4,6 +4,7 @@ using Platform.API.Extensions;
 using Platform.API.OAuth;
 using Platform.SDK.Components.Extensions;
 
+using PlatformTestApp.Auth;
 using PlatformTestApp.Components;
 
 using System.Security.Cryptography;
@@ -22,6 +23,13 @@ builder.Services.AddFluentUIComponents();
 builder.Services.AddYouVersionApiClients(builder.Configuration);
 builder.Services.AddYouVersionCaching(o =>
     builder.Configuration.GetSection(Platform.API.Configuration.YouVersionCacheOptions.SectionName).Bind(o));
+
+// Must be registered before AddYouVersionOAuth: the library only adds its default
+// InMemoryTokenProvider via TryAddSingleton, which is a per-process singleton shared
+// by every user. Registering a per-session provider first makes TryAddSingleton a no-op.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITokenProvider, SessionTokenProvider>();
+
 builder.Services.AddYouVersionOAuth(o =>
 {
     builder.Configuration.GetSection("YouVersionOAuth").Bind(o);
@@ -31,7 +39,6 @@ builder.Services.AddYouVersionOAuth(o =>
         o.ClientId = builder.Configuration["YouVersionApi:AppKey"] ?? string.Empty;
 });
 
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddYouVersionComponents();
 
 // Session support for OAuth PKCE code verifier / state storage

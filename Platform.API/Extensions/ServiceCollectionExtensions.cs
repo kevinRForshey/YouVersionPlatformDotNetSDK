@@ -1,14 +1,13 @@
-using System;
 using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+
 using Platform.API.Clients;
 using Platform.API.Configuration;
 using Platform.API.Http;
 using Platform.API.OAuth;
+
 using YouVersion.UsfmReferences;
 
 namespace Platform.API.Extensions;

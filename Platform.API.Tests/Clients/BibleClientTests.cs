@@ -145,27 +145,57 @@ public sealed class BibleClientTests
     }
 
     // -------------------------------------------------------------------------
+    // GetIndexAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetIndexAsync_ReturnsIndex_WhenApiSucceeds()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+
+        var index = await client.GetIndexAsync(3034);
+
+        index.TextDirection.Should().Be("ltr");
+        index.Books.Should().HaveCount(2);
+        index.Books[0].Usfm.Should().Be("GEN");
+        index.Books[0].Title.Should().Be("Genesis");
+        index.Books[0].Canon.Should().Be(Platform.API.Models.BookCanon.OldTestament);
+    }
+
+    [Fact]
+    public async Task GetIndexAsync_ThrowsYouVersionApiException_WhenNotFound()
+    {
+        var client = BuildClient(HttpStatusCode.NotFound, """{"error":"not found"}""");
+        var act = () => client.GetIndexAsync(9999);
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetIndexAsync_ThrowsArgumentOutOfRangeException_WhenVersionIdIsNotPositive()
+    {
+        var client = BuildClient(HttpStatusCode.OK, "{}");
+        var act = () => client.GetIndexAsync(0);
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
+    // -------------------------------------------------------------------------
     // GetBooksAsync
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task GetBooksAsync_ReturnsBooksFromVersionMetadata()
+    public async Task GetBooksAsync_ReturnsBooksFromIndex_WithRealChapterCounts()
     {
-        const string json = """
-            {
-              "id": 3034, "abbreviation": "BSB", "localized_abbreviation": "BSB",
-              "title": "Berean Standard Bible", "localized_title": "Berean Standard Bible",
-              "language_tag": "en", "copyright": "Public Domain",
-              "books": ["GEN","EXO","LEV"]
-            }
-            """;
-        var client = BuildClient(HttpStatusCode.OK, json);
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
 
         var books = await client.GetBooksAsync(3034);
 
-        books.Should().HaveCount(3);
+        books.Should().HaveCount(2);
         books[0].Usfm.Should().Be("GEN");
-        books[2].Usfm.Should().Be("LEV");
+        books[0].Human.Should().Be("Genesis");
+        books[0].ChapterCount.Should().Be(2);
+        books[1].Usfm.Should().Be("EXO");
+        books[1].ChapterCount.Should().Be(1);
     }
 
     [Fact]
@@ -176,17 +206,164 @@ public sealed class BibleClientTests
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
+    // -------------------------------------------------------------------------
+    // GetChaptersAsync
+    // -------------------------------------------------------------------------
+
     [Fact]
-    public async Task GetBooksAsync_ThrowsArgumentNullException_WhenVersionIsNull()
+    public async Task GetChaptersAsync_ReturnsChaptersForBook_WithRealVerseCounts()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+
+        var chapters = await client.GetChaptersAsync(3034, "GEN");
+
+        chapters.Should().HaveCount(2);
+        chapters[0].Usfm.Should().Be("GEN.1");
+        chapters[0].VerseCount.Should().Be(2);
+        chapters[1].Usfm.Should().Be("GEN.2");
+        chapters[1].VerseCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetChaptersAsync_IsCaseInsensitive_ForBookUsfm()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+
+        var chapters = await client.GetChaptersAsync(3034, "gen");
+
+        chapters.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetChaptersAsync_ThrowsYouVersionApiException_WhenBookNotInIndex()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+        var act = () => client.GetChaptersAsync(3034, "REV");
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetChaptersAsync_ThrowsArgumentOutOfRangeException_WhenVersionIdIsNotPositive()
     {
         var client = BuildClient(HttpStatusCode.OK, "{}");
-        var act = () => client.GetBooksAsync((Platform.API.Models.BibleVersion)null!);
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        var act = () => client.GetChaptersAsync(0, "GEN");
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task GetChaptersAsync_ThrowsArgumentException_WhenBookUsfmIsInvalid(string bookUsfm)
+    {
+        var client = BuildClient(HttpStatusCode.OK, "{}");
+        var act = () => client.GetChaptersAsync(3034, bookUsfm);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    // -------------------------------------------------------------------------
+    // GetVersesAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetVersesAsync_ReturnsVersesForChapter()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+
+        var verses = await client.GetVersesAsync(3034, "GEN", 1);
+
+        verses.Should().HaveCount(2);
+        verses[0].Usfm.Should().Be("GEN.1.1");
+        verses[0].Human.Should().Be("Genesis 1:1");
+        verses[0].Text.Should().BeEmpty();
+        verses[1].Usfm.Should().Be("GEN.1.2");
+    }
+
+    [Fact]
+    public async Task GetVersesAsync_ThrowsYouVersionApiException_WhenChapterNotInBook()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+        var act = () => client.GetVersesAsync(3034, "GEN", 99);
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetVersesAsync_ThrowsYouVersionApiException_WhenBookNotInIndex()
+    {
+        var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
+        var act = () => client.GetVersesAsync(3034, "REV", 1);
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetVersesAsync_ThrowsArgumentOutOfRangeException_WhenVersionIdIsNotPositive()
+    {
+        var client = BuildClient(HttpStatusCode.OK, "{}");
+        var act = () => client.GetVersesAsync(0, "GEN", 1);
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public async Task GetVersesAsync_ThrowsArgumentException_WhenBookUsfmIsEmpty()
+    {
+        var client = BuildClient(HttpStatusCode.OK, "{}");
+        var act = () => client.GetVersesAsync(3034, "", 1);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task GetVersesAsync_ThrowsArgumentOutOfRangeException_WhenChapterNumberIsNotPositive()
+    {
+        var client = BuildClient(HttpStatusCode.OK, "{}");
+        var act = () => client.GetVersesAsync(3034, "GEN", 0);
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private const string SampleIndexJson = """
+        {
+          "text_direction": "ltr",
+          "books": [
+            {
+              "id": "GEN", "title": "Genesis", "full_title": "The Book of Genesis",
+              "abbreviation": "Gen.", "canon": "old_testament",
+              "chapters": [
+                {
+                  "id": 1, "passage_id": "GEN.1", "title": 1,
+                  "verses": [
+                    { "id": 1, "passage_id": "GEN.1.1", "title": 1 },
+                    { "id": 2, "passage_id": "GEN.1.2", "title": 2 }
+                  ]
+                },
+                {
+                  "id": 2, "passage_id": "GEN.2", "title": 2,
+                  "verses": [
+                    { "id": 1, "passage_id": "GEN.2.1", "title": 1 }
+                  ]
+                }
+              ],
+              "intro": { "id": "INTRO", "passage_id": "GEN.INTRO", "title": "Intro" }
+            },
+            {
+              "id": "EXO", "title": "Exodus", "full_title": "The Book of Exodus",
+              "abbreviation": "Exo.", "canon": "old_testament",
+              "chapters": [
+                {
+                  "id": 1, "passage_id": "EXO.1", "title": 1,
+                  "verses": [
+                    { "id": 1, "passage_id": "EXO.1.1", "title": 1 }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """;
 
     private static BibleClient BuildClient(HttpStatusCode status, string json)
         => BuildClientFromHandler(new FakeHttpMessageHandler(status, json));
