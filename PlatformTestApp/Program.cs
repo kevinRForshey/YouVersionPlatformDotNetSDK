@@ -149,7 +149,7 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
     {
         exchangeError = "Session expired or invalid callback. Please try signing in again.";
     }
-    else if (!string.IsNullOrEmpty(expected) && expected != retState)
+    else if (!oauthClient.ValidateState(expected, retState))
     {
         exchangeError = "State mismatch — possible CSRF attempt. Please try signing in again.";
     }

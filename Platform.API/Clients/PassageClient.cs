@@ -42,8 +42,7 @@ internal sealed partial class PassageClient(
         var passage = await ApiRequestHelper.GetJsonAsync<Passage>(httpClient, url, logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var result = passage ?? throw new YouVersionApiException(
-            System.Net.HttpStatusCode.OK,
+        var result = passage ?? throw new YouVersionEmptyResponseException(
             $"The API returned an empty body for passage '{normalizedUsfm}' (version {versionId}).");
 
         logger.LogDebug("Fetched passage {Usfm} from version {VersionId}.", normalizedUsfm, versionId);

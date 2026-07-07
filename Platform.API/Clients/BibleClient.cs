@@ -4,7 +4,6 @@ using Platform.API.Exceptions;
 using Platform.API.Http;
 using Platform.API.Models;
 
-using System.Net;
 using System.Text;
 
 namespace Platform.API.Clients;
@@ -52,8 +51,7 @@ internal sealed class BibleClient(HttpClient httpClient, ILogger<BibleClient> lo
         var result = await ApiRequestHelper.GetJsonAsync<BibleVersion>(httpClient, $"/v1/bibles/{versionId}", logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var version = result ?? throw new YouVersionApiException(
-            HttpStatusCode.NotFound,
+        var version = result ?? throw new YouVersionEmptyResponseException(
             $"Bible version {versionId} was not found or returned an empty response.");
 
         logger.LogDebug("Fetched Bible version {VersionId} ({Abbreviation}).", versionId, version.Abbreviation);
@@ -71,8 +69,7 @@ internal sealed class BibleClient(HttpClient httpClient, ILogger<BibleClient> lo
         var result = await ApiRequestHelper.GetJsonAsync<BibleIndex>(httpClient, $"/v1/bibles/{versionId}/index", logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var index = result ?? throw new YouVersionApiException(
-            HttpStatusCode.NotFound,
+        var index = result ?? throw new YouVersionEmptyResponseException(
             $"The index for Bible version {versionId} was not found or returned an empty response.");
 
         logger.LogDebug("Fetched index for Bible version {VersionId} with {Count} book(s).", versionId, index.Books.Count);

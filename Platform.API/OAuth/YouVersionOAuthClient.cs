@@ -70,6 +70,21 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
     }
 
     /// <inheritdoc />
+    public bool ValidateState(string? expectedState, string? actualState)
+    {
+        if (string.IsNullOrEmpty(expectedState) || string.IsNullOrEmpty(actualState))
+            return false;
+
+        var expectedBytes = Encoding.UTF8.GetBytes(expectedState);
+        var actualBytes = Encoding.UTF8.GetBytes(actualState);
+
+        // Lengths must match for FixedTimeEquals; a length mismatch is not itself sensitive
+        // (the state is a public URL query parameter), so an early return here is fine.
+        return expectedBytes.Length == actualBytes.Length
+            && CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes);
+    }
+
+    /// <inheritdoc />
     public async Task<OAuthTokenResponse> ExchangeCodeAsync(
         string code,
         string codeVerifier,
@@ -163,8 +178,7 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
             .ReadFromJsonAsync<OAuthTokenResponse>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        return token ?? throw new YouVersionApiException(
-            System.Net.HttpStatusCode.OK,
+        return token ?? throw new YouVersionEmptyResponseException(
             "OAuth token endpoint returned an empty response body.");
     }
 
