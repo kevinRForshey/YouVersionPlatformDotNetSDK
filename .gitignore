@@ -56,3 +56,7 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /.vs
+
+# Local secrets / environment-specific settings
+appsettings.Development.json
+appsettings.*.local.json
