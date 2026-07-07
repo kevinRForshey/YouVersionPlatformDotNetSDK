@@ -1,5 +1,5 @@
 using System;
-using System.Net;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -117,6 +117,44 @@ public sealed class OAuthBearerTokenHandlerTests
     }
 
     // -------------------------------------------------------------------------
+    // Expired token — concurrent requests single-flight the refresh
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SendAsync_SingleFlightsRefresh_WhenConcurrentRequestsHitExpiredToken()
+    {
+        var expiredToken = new OAuthTokenResponse
+        {
+            AccessToken = "old-access", RefreshToken = "ref-tok",
+            ExpiresIn = 10, ReceivedAt = DateTimeOffset.UtcNow.AddSeconds(-100)
+        };
+        var refreshedToken = FreshToken("refreshed-access");
+
+        var refreshTcs = new TaskCompletionSource<OAuthTokenResponse>();
+        var refreshCallCount = 0;
+        var oAuthMock = new Mock<IYouVersionOAuthClient>();
+        oAuthMock.Setup(c => c.RefreshTokenAsync(It.IsAny<CancellationToken>()))
+                 .Returns(() =>
+                 {
+                     Interlocked.Increment(ref refreshCallCount);
+                     return refreshTcs.Task;
+                 });
+
+        var (_, httpClient) = BuildPipeline(expiredToken, oAuthMock.Object);
+
+        // Several requests race in while the token is expired and no refresh has completed yet.
+        var requestTasks = Enumerable.Range(0, 5)
+            .Select(_ => httpClient.GetAsync("/test"))
+            .ToArray();
+
+        refreshTcs.SetResult(refreshedToken);
+        await Task.WhenAll(requestTasks);
+
+        refreshCallCount.Should().Be(1);
+        oAuthMock.Verify(c => c.RefreshTokenAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
@@ -144,17 +182,5 @@ public sealed class OAuthBearerTokenHandlerTests
 
         var httpClient = new HttpClient(sut) { BaseAddress = new Uri("https://api.youversion.com") };
         return (inner, httpClient);
-    }
-
-    private sealed class CapturingHandler : HttpMessageHandler
-    {
-        public HttpRequestMessage? LastRequest { get; private set; }
-
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            LastRequest = request;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
-        }
     }
 }

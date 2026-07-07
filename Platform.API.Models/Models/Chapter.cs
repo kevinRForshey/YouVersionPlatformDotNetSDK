@@ -8,11 +8,6 @@ namespace Platform.API.Models;
 public sealed record Chapter
 {
     /// <summary>Gets the USFM chapter identifier (e.g. <c>GEN.1</c>).</summary>
-    /// <remarks>
-    /// This is a normalized, validated USFM chapter reference from the YouVersion Platform API.
-    /// All USFM references passed to passage and highlight operations are validated against
-    /// YouVersion.UsfmReferences.BookCatalog before being sent to the API.
-    /// </remarks>
     [JsonPropertyName("usfm")]
     public string Usfm { get; init; } = string.Empty;
 

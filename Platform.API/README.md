@@ -4,7 +4,7 @@ Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.
 
 ## What this package provides
 
-- `IBibleClient` for Bible discovery and version metadata.
+- `IBibleClient` for Bible discovery, version metadata, and book/chapter/verse structure.
 - `IPassageClient` for passage text/HTML retrieval.
 - `IHighlightClient` for highlight read/write operations. (not fully implemented)
 - `IYouVersionOAuthClient` for authorization-code + PKCE OAuth flow.
@@ -79,6 +79,34 @@ public sealed class VersionReader(IBibleClient bibleClient)
     public Task<PagedResult<BibleVersionSummary>> GetEnglishVersionsAsync(CancellationToken ct)
         => bibleClient.GetVersionsAsync(languageRange: "en", cancellationToken: ct);
 }
+```
+
+### Get books, chapters, and verses for a version
+
+`GetBooksAsync`, `GetChaptersAsync`, and `GetVersesAsync` are all backed by a single cached call
+to `GET /v1/bibles/{id}/index`, so the returned structure (chapter counts per book, verse counts
+per chapter) always reflects the actual content of that specific version rather than a generic
+guess. Verses returned this way carry no scripture text — use `IPassageClient` for that.
+
+```csharp
+public sealed class BibleStructureReader(IBibleClient bibleClient)
+{
+    public Task<IReadOnlyList<Book>> GetBooksAsync(CancellationToken ct)
+        => bibleClient.GetBooksAsync(versionId: 3034, cancellationToken: ct);
+
+    public Task<IReadOnlyList<Chapter>> GetChaptersAsync(CancellationToken ct)
+        => bibleClient.GetChaptersAsync(versionId: 3034, bookUsfm: "GEN", cancellationToken: ct);
+
+    public Task<IReadOnlyList<Verse>> GetVersesAsync(CancellationToken ct)
+        => bibleClient.GetVersesAsync(versionId: 3034, bookUsfm: "GEN", chapterNumber: 1, cancellationToken: ct);
+}
+```
+
+You can also fetch the raw index directly if you need the full nested structure (including
+canon and intro sections) in one call:
+
+```csharp
+BibleIndex index = await bibleClient.GetIndexAsync(versionId: 3034, cancellationToken: ct);
 ```
 
 ### Fetch passage text

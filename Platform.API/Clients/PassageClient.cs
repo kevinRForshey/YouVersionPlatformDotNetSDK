@@ -1,8 +1,13 @@
-using System.Text;
+// Ignore Spelling: usfm
+
 using Microsoft.Extensions.Logging;
+
 using Platform.API.Exceptions;
 using Platform.API.Http;
 using Platform.API.Models;
+
+using System.Text;
+
 using YouVersion.UsfmReferences;
 
 namespace Platform.API.Clients;
@@ -31,14 +36,13 @@ internal sealed partial class PassageClient(
         var normalizedUsfm = usfm.ToString();
         var url = BuildPassageUrl(versionId, normalizedUsfm, resolvedOptions);
 
-        logger.LogDebug("Fetching passage {Usfm} from version {VersionId} (format={Format}).", 
+        logger.LogDebug("Fetching passage {Usfm} from version {VersionId} (format={Format}).",
             normalizedUsfm, versionId, resolvedOptions.Format);
 
         var passage = await ApiRequestHelper.GetJsonAsync<Passage>(httpClient, url, logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var result = passage ?? throw new YouVersionApiException(
-            System.Net.HttpStatusCode.OK,
+        var result = passage ?? throw new YouVersionEmptyResponseException(
             $"The API returned an empty body for passage '{normalizedUsfm}' (version {versionId}).");
 
         logger.LogDebug("Fetched passage {Usfm} from version {VersionId}.", normalizedUsfm, versionId);

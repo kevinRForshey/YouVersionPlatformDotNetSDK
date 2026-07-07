@@ -13,7 +13,6 @@ namespace Platform.API.Clients;
 /// </summary>
 internal sealed class BibleClient(HttpClient httpClient, ILogger<BibleClient> logger) : IBibleClient
 {
-
     /// <inheritdoc />
     public async Task<PagedResult<BibleVersionSummary>> GetVersionsAsync(
         string languageRange = "en",
@@ -52,12 +51,29 @@ internal sealed class BibleClient(HttpClient httpClient, ILogger<BibleClient> lo
         var result = await ApiRequestHelper.GetJsonAsync<BibleVersion>(httpClient, $"/v1/bibles/{versionId}", logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var version = result ?? throw new YouVersionApiException(
-            System.Net.HttpStatusCode.NotFound,
+        var version = result ?? throw new YouVersionEmptyResponseException(
             $"Bible version {versionId} was not found or returned an empty response.");
 
         logger.LogDebug("Fetched Bible version {VersionId} ({Abbreviation}).", versionId, version.Abbreviation);
         return version;
+    }
+
+    /// <inheritdoc />
+    public async Task<BibleIndex> GetIndexAsync(int versionId, CancellationToken cancellationToken = default)
+    {
+        if (versionId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(versionId), versionId, "Version id must be greater than zero.");
+
+        logger.LogDebug("Fetching index for Bible version {VersionId}.", versionId);
+
+        var result = await ApiRequestHelper.GetJsonAsync<BibleIndex>(httpClient, $"/v1/bibles/{versionId}/index", logger, cancellationToken)
+            .ConfigureAwait(false);
+
+        var index = result ?? throw new YouVersionEmptyResponseException(
+            $"The index for Bible version {versionId} was not found or returned an empty response.");
+
+        logger.LogDebug("Fetched index for Bible version {VersionId} with {Count} book(s).", versionId, index.Books.Count);
+        return index;
     }
 
     /// <inheritdoc />
@@ -68,27 +84,61 @@ internal sealed class BibleClient(HttpClient httpClient, ILogger<BibleClient> lo
 
         logger.LogDebug("Fetching books for Bible version {VersionId}.", versionId);
 
-        var version = await GetVersionAsync(versionId, cancellationToken).ConfigureAwait(false);
-        var books = BuildBookList(version);
+        var index = await GetIndexAsync(versionId, cancellationToken).ConfigureAwait(false);
+        var books = BibleIndexMapper.BuildBooks(index);
 
         logger.LogDebug("Fetched {Count} book(s) for Bible version {VersionId}.", books.Count, versionId);
         return books;
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<Book>> GetBooksAsync(BibleVersion version)
+    public async Task<IReadOnlyList<Chapter>> GetChaptersAsync(
+        int versionId, string bookUsfm, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(version);
+        if (versionId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(versionId), versionId, "Version id must be greater than zero.");
 
-        return Task.FromResult<IReadOnlyList<Book>>(BuildBookList(version));
+        if (string.IsNullOrWhiteSpace(bookUsfm))
+            throw new ArgumentException("Book USFM code is required.", nameof(bookUsfm));
+
+        logger.LogDebug("Fetching chapters for book {BookUsfm} in Bible version {VersionId}.", bookUsfm, versionId);
+
+        var index = await GetIndexAsync(versionId, cancellationToken).ConfigureAwait(false);
+        var indexBook = BibleIndexMapper.FindBook(index, versionId, bookUsfm);
+        var chapters = BibleIndexMapper.BuildChapters(indexBook);
+
+        logger.LogDebug("Fetched {Count} chapter(s) for book {BookUsfm} in Bible version {VersionId}.", chapters.Count, bookUsfm, versionId);
+        return chapters;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Verse>> GetVersesAsync(
+        int versionId, string bookUsfm, int chapterNumber, CancellationToken cancellationToken = default)
+    {
+        if (versionId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(versionId), versionId, "Version id must be greater than zero.");
+
+        if (string.IsNullOrWhiteSpace(bookUsfm))
+            throw new ArgumentException("Book USFM code is required.", nameof(bookUsfm));
+
+        if (chapterNumber <= 0)
+            throw new ArgumentOutOfRangeException(nameof(chapterNumber), chapterNumber, "Chapter number must be greater than zero.");
+
+        logger.LogDebug("Fetching verses for {BookUsfm} {ChapterNumber} in Bible version {VersionId}.", bookUsfm, chapterNumber, versionId);
+
+        var index = await GetIndexAsync(versionId, cancellationToken).ConfigureAwait(false);
+        var indexBook = BibleIndexMapper.FindBook(index, versionId, bookUsfm);
+        var indexChapter = BibleIndexMapper.FindChapter(indexBook, versionId, bookUsfm, chapterNumber);
+
+        var verses = BibleIndexMapper.BuildVerses(indexBook, indexChapter);
+
+        logger.LogDebug("Fetched {Count} verse(s) for {BookUsfm} {ChapterNumber} in Bible version {VersionId}.", verses.Count, bookUsfm, chapterNumber, versionId);
+        return verses;
     }
 
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
-
-    private static IReadOnlyList<Book> BuildBookList(BibleVersion version)
-        => version.Books.Select(BibleBookCatalog.FromUsfm).ToList().AsReadOnly();
 
     private static string BuildVersionsUrl(string languageRange, string? pageToken, int? pageSize)
     {

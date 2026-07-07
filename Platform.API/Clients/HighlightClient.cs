@@ -79,8 +79,7 @@ internal sealed partial class HighlightClient(
             .ReadFromJsonAsync<Highlight>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        var result = highlight ?? throw new YouVersionApiException(
-            System.Net.HttpStatusCode.OK,
+        var result = highlight ?? throw new YouVersionEmptyResponseException(
             $"Create highlight for '{ToNormalizedUsfm(usfm)}' returned an empty response body.");
 
         logger.LogDebug("Created highlight {HighlightId} for {Usfm}.", result.Id, ToNormalizedUsfm(usfm));

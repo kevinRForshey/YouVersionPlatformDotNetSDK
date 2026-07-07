@@ -4,6 +4,7 @@ using Platform.API.Extensions;
 using Platform.API.OAuth;
 using Platform.SDK.Components.Extensions;
 
+using PlatformTestApp.Auth;
 using PlatformTestApp.Components;
 
 using System.Security.Cryptography;
@@ -22,6 +23,19 @@ builder.Services.AddFluentUIComponents();
 builder.Services.AddYouVersionApiClients(builder.Configuration);
 builder.Services.AddYouVersionCaching(o =>
     builder.Configuration.GetSection(Platform.API.Configuration.YouVersionCacheOptions.SectionName).Bind(o));
+
+// Must be registered before AddYouVersionOAuth: the library only adds its default
+// InMemoryTokenProvider via TryAddSingleton, which is a per-process singleton shared
+// by every user. Registering a per-session provider first makes TryAddSingleton a no-op.
+//
+// CircuitSessionKeyAccessor + IDistributedCache (rather than ISession directly) so the token
+// stays readable for the full lifetime of an interactive Blazor Server circuit, not just during
+// the HTTP request that stored it — HttpContext/ISession are only live during that request.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddScoped<CircuitSessionKeyAccessor>();
+builder.Services.AddScoped<ITokenProvider, SessionTokenProvider>();
+
 builder.Services.AddYouVersionOAuth(o =>
 {
     builder.Configuration.GetSection("YouVersionOAuth").Bind(o);
@@ -31,11 +45,9 @@ builder.Services.AddYouVersionOAuth(o =>
         o.ClientId = builder.Configuration["YouVersionApi:AppKey"] ?? string.Empty;
 });
 
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddYouVersionComponents();
 
 // Session support for OAuth PKCE code verifier / state storage
-builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(o =>
 {
     o.Cookie.HttpOnly = true;
@@ -70,9 +82,10 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
         return;
     }
 
-    // Some YouVersion callback flows provide identity data directly in the query string.
-    // Store a lightweight token so the Blazor UI can show signed-in state consistently.
-    if (ctx.Request.Path == "/" &&
+    // Dev-only convenience: lets the UI be exercised without a live OAuth round trip.
+    // Builds an unsigned token from raw query params, so it must never be reachable
+    // outside Development — anyone could pass ?user_name=admin and appear signed in.
+    if (app.Environment.IsDevelopment() && ctx.Request.Path == "/" &&
         (ctx.Request.Query.ContainsKey("user_name") || ctx.Request.Query.ContainsKey("user_email")))
     {
         var userName = ctx.Request.Query["user_name"].ToString();
@@ -141,7 +154,7 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
     {
         exchangeError = "Session expired or invalid callback. Please try signing in again.";
     }
-    else if (!string.IsNullOrEmpty(expected) && expected != retState)
+    else if (!oauthClient.ValidateState(expected, retState))
     {
         exchangeError = "State mismatch — possible CSRF attempt. Please try signing in again.";
     }

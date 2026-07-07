@@ -21,6 +21,39 @@ public sealed class OAuthClientTests
         """;
 
     // -------------------------------------------------------------------------
+    // ValidateState
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ValidateState_ReturnsTrue_WhenValuesMatch()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        client.ValidateState("csrf-token-abc", "csrf-token-abc").Should().BeTrue();
+    }
+
+    [Fact]
+    public void ValidateState_ReturnsFalse_WhenValuesDiffer()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        client.ValidateState("csrf-token-abc", "csrf-token-xyz").Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(null, "state")]
+    [InlineData("state", null)]
+    [InlineData("", "state")]
+    [InlineData("state", "")]
+    [InlineData(null, null)]
+    public void ValidateState_ReturnsFalse_WhenEitherValueIsMissing(string? expected, string? actual)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        client.ValidateState(expected, actual).Should().BeFalse();
+    }
+
+    // -------------------------------------------------------------------------
     // BuildAuthorizationUrl
     // -------------------------------------------------------------------------
 

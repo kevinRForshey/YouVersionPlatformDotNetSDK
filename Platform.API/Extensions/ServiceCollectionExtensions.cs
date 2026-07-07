@@ -1,14 +1,13 @@
-using System;
 using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+
 using Platform.API.Clients;
 using Platform.API.Configuration;
 using Platform.API.Http;
 using Platform.API.OAuth;
+
 using YouVersion.UsfmReferences;
 
 namespace Platform.API.Extensions;
@@ -19,6 +18,18 @@ namespace Platform.API.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// The named-HttpClient registration name used for <see cref="HighlightClient"/>'s pipeline.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AddYouVersionOAuth"/> appends <see cref="OAuthBearerTokenHandler"/> onto this same
+    /// named client after <see cref="AddYouVersionApiClients(IServiceCollection, Action{Configuration.YouVersionApiOptions})"/>
+    /// has registered it. Both call sites reference this single constant instead of independently
+    /// deriving <c>typeof(HighlightClient).Name</c>, so a rename of <see cref="HighlightClient"/> can't
+    /// silently desynchronize the two registrations.
+    /// </remarks>
+    internal const string HighlightClientName = nameof(HighlightClient);
+
     /// <summary>
     /// Registers the YouVersion Platform API clients (<see cref="IBibleClient"/>,
     /// <see cref="IPassageClient"/>, and <see cref="IHighlightClient"/>) and their
@@ -57,7 +68,7 @@ public static class ServiceCollectionExtensions
 
         RegisterTypedClient<IBibleClient, BibleClient>(services);
         RegisterTypedClient<IPassageClient, PassageClient>(services);
-        RegisterTypedClient<IHighlightClient, HighlightClient>(services);
+        RegisterTypedClient<IHighlightClient, HighlightClient>(services, HighlightClientName);
         return services;
     }
 
@@ -96,7 +107,7 @@ public static class ServiceCollectionExtensions
 
         RegisterTypedClient<IBibleClient, BibleClient>(services);
         RegisterTypedClient<IPassageClient, PassageClient>(services);
-        RegisterTypedClient<IHighlightClient, HighlightClient>(services);
+        RegisterTypedClient<IHighlightClient, HighlightClient>(services, HighlightClientName);
 
         return services;
     }
@@ -150,7 +161,7 @@ public static class ServiceCollectionExtensions
         // Append OAuthBearerTokenHandler to IHighlightClient's existing pipeline
         // (AppKeyDelegatingHandler was already added by AddYouVersionApiClients).
         // AddYouVersionApiClients MUST be called first.
-        services.AddHttpClient(typeof(HighlightClient).Name)
+        services.AddHttpClient(HighlightClientName)
             .AddHttpMessageHandler<OAuthBearerTokenHandler>();
 
         return services;
@@ -160,23 +171,33 @@ public static class ServiceCollectionExtensions
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private static void RegisterTypedClient<TClient, TImplementation>(IServiceCollection services)
+    private static void RegisterTypedClient<TClient, TImplementation>(
+        IServiceCollection services,
+        string? httpClientName = null)
         where TClient : class
         where TImplementation : class, TClient
     {
+        void ConfigureClient(IServiceProvider serviceProvider, HttpClient httpClient)
+        {
+            var options = serviceProvider
+                .GetRequiredService<IOptions<YouVersionApiOptions>>()
+                .Value;
+
+            httpClient.BaseAddress = options.BaseAddress;
+            httpClient.Timeout = options.Timeout;
+        }
+
         // Register the concrete implementation as its own typed HTTP client so it can be
         // resolved directly by name (e.g. by caching decorators without creating a circular
-        // dependency through the interface).
-        services
-            .AddHttpClient<TImplementation>((serviceProvider, httpClient) =>
-            {
-                var options = serviceProvider
-                    .GetRequiredService<IOptions<YouVersionApiOptions>>()
-                    .Value;
+        // dependency through the interface). When httpClientName is supplied, the underlying
+        // named-client registration uses that explicit name instead of the framework's implicit
+        // typeof(TImplementation).Name convention, so other code (e.g. AddYouVersionOAuth) can
+        // reference the same named pipeline via a shared constant rather than re-deriving it.
+        var builder = httpClientName is null
+            ? services.AddHttpClient<TImplementation>(ConfigureClient)
+            : services.AddHttpClient<TImplementation>(httpClientName, ConfigureClient);
 
-                httpClient.BaseAddress = options.BaseAddress;
-                httpClient.Timeout = options.Timeout;
-            })
+        builder
             .AddHttpMessageHandler<AppKeyDelegatingHandler>()
             .AddHttpMessageHandler<OutboundRateLimitingHandler>()
             .AddStandardResilienceHandler();

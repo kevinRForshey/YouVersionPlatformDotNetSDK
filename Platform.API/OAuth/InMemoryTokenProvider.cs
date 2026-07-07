@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Platform.API.OAuth;
 
 /// <summary>
@@ -9,8 +6,7 @@ namespace Platform.API.OAuth;
 /// </summary>
 /// <remarks>
 /// Tokens are stored in a private field and lost when the process exits.
-/// This implementation is thread-safe; concurrent reads and writes are serialised
-/// via a <see cref="SemaphoreSlim"/>.
+/// thread safe implementation.
 /// Use a custom <see cref="ITokenProvider"/> implementation for scenarios that require
 /// durable token storage (mobile, web, or desktop applications).
 /// </remarks>

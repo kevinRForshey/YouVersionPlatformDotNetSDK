@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +6,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Platform.API.Configuration;
 using Platform.API.Http;
+using Platform.API.Tests.Fakes;
 using Xunit;
 
 namespace Platform.API.Tests.Http;
@@ -78,18 +78,5 @@ public sealed class AppKeyDelegatingHandlerTests
             BaseAddress = new Uri("https://api.youversion.com")
         };
         return (inner, httpClient);
-    }
-
-    /// <summary>Captures the last outgoing request for assertion.</summary>
-    private sealed class CapturingHandler : HttpMessageHandler
-    {
-        public HttpRequestMessage? LastRequest { get; private set; }
-
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            LastRequest = request;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
-        }
     }
 }
