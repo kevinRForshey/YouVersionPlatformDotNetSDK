@@ -27,7 +27,13 @@ builder.Services.AddYouVersionCaching(o =>
 // Must be registered before AddYouVersionOAuth: the library only adds its default
 // InMemoryTokenProvider via TryAddSingleton, which is a per-process singleton shared
 // by every user. Registering a per-session provider first makes TryAddSingleton a no-op.
+//
+// CircuitSessionKeyAccessor + IDistributedCache (rather than ISession directly) so the token
+// stays readable for the full lifetime of an interactive Blazor Server circuit, not just during
+// the HTTP request that stored it — HttpContext/ISession are only live during that request.
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddScoped<CircuitSessionKeyAccessor>();
 builder.Services.AddScoped<ITokenProvider, SessionTokenProvider>();
 
 builder.Services.AddYouVersionOAuth(o =>
@@ -42,7 +48,6 @@ builder.Services.AddYouVersionOAuth(o =>
 builder.Services.AddYouVersionComponents();
 
 // Session support for OAuth PKCE code verifier / state storage
-builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(o =>
 {
     o.Cookie.HttpOnly = true;
