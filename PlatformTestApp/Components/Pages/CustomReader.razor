@@ -2,7 +2,6 @@
 @using Platform.SDK.Components.BibleComponents
 @using Platform.SDK.Services
 @using Platform.API.Models
-@using YouVersion.UsfmReferences
 @inject IBibleReaderStateService State
 @inject IPassageService PassageService
 @rendermode InteractiveServer
@@ -95,11 +94,7 @@
                      State.SelectedBook is not null &&
                      State.SelectedVersion is not null)
                 {
-                    <VersePicker Book="@State.SelectedBook.Usfm"
-                                 Chapter="@State.SelectedChapter.Value"
-                                 Verse="@(State.SelectedVerseStart ?? 1)"
-                                 VerseEnd="@(State.SelectedVerseEnd ?? 0)"
-                                 VersionId="@State.SelectedVersion.Id" />
+                    <VersePicker />
                 }
                 else
                 {

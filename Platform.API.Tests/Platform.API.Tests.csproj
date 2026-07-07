@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Platform.API\Platform.API.csproj" />
+    <ProjectReference Include="..\Platform.SDK.Services\Platform.SDK.Services.csproj" />
   </ItemGroup>
 
 </Project>

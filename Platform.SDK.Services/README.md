@@ -10,6 +10,24 @@ Provides `VersionService`, `PassageService`, `BookService`, and `BibleReaderStat
 dotnet add package YouVersion.Platform.SDK.Services
 ```
 
+## Fetching a passage
+
+`IPassageService.GetPassageAsync` has two overloads: pass a pre-built `Reference` directly, or
+pass raw book/chapter/verse primitives and let the service build the `Reference`/`VerseRange`
+internally. Callers (including `BibleReader` and `CustomReader` in this solution) should prefer
+the primitive overload so `Reference`/`VerseRange` construction lives in one place rather than
+being duplicated at each call site.
+
+```csharp
+// Single verse
+Passage passage = await passageService.GetPassageAsync(
+    versionId: 3034, bookUsfm: "JHN", chapter: 3, verseStart: 16);
+
+// Verse range
+Passage range = await passageService.GetPassageAsync(
+    versionId: 3034, bookUsfm: "JHN", chapter: 3, verseStart: 16, verseEnd: 17);
+```
+
 ## License
 
 MIT

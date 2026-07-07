@@ -5,12 +5,6 @@ namespace Platform.SDK.Components.BibleComponents
 {
     public partial class VersePicker
     {
-        [Parameter, EditorRequired] public string Book { get; set; } = string.Empty;
-        [Parameter, EditorRequired] public int Chapter { get; set; }
-        [Parameter] public int Verse { get; set; }       // maps from SelectedVerseStart
-        [Parameter] public int VerseEnd { get; set; }    // maps from SelectedVerseEnd
-        [Parameter, EditorRequired] public int VersionId { get; set; }
-
         // Used only until the real per-chapter verse count has loaded from the API.
         private const int FallbackMaxVerse = 176; // Psalm 119 — longest chapter
 

@@ -2,8 +2,6 @@
 
 using Platform.API.Models;
 
-using YouVersion.UsfmReferences;
-
 namespace PlatformTestApp.Components.Pages
 {
     public partial class CustomReader
@@ -47,17 +45,12 @@ namespace PlatformTestApp.Components.Pages
 
             try
             {
-                var verseStart = State.SelectedVerseStart!.Value;
-                var verseEnd = State.SelectedVerseEnd ?? verseStart;
-
-                var reference = new Reference(
-                    book: State.SelectedBook!.Usfm,
-                    chapter: State.SelectedChapter!.Value,
-                    verses: [new VerseRange(verseStart, verseEnd)]);
-
                 _passage = await PassageService.GetPassageAsync(
                     State.SelectedVersion!.Id,
-                    reference,
+                    State.SelectedBook!.Usfm,
+                    State.SelectedChapter!.Value,
+                    State.SelectedVerseStart!.Value,
+                    State.SelectedVerseEnd,
                     new PassageRequestOptions { Format = PassageFormat.Html },
                     _cts.Token);
             }

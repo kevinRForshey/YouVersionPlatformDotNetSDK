@@ -77,9 +77,10 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
         return;
     }
 
-    // Some YouVersion callback flows provide identity data directly in the query string.
-    // Store a lightweight token so the Blazor UI can show signed-in state consistently.
-    if (ctx.Request.Path == "/" &&
+    // Dev-only convenience: lets the UI be exercised without a live OAuth round trip.
+    // Builds an unsigned token from raw query params, so it must never be reachable
+    // outside Development — anyone could pass ?user_name=admin and appear signed in.
+    if (app.Environment.IsDevelopment() && ctx.Request.Path == "/" &&
         (ctx.Request.Query.ContainsKey("user_name") || ctx.Request.Query.ContainsKey("user_email")))
     {
         var userName = ctx.Request.Query["user_name"].ToString();

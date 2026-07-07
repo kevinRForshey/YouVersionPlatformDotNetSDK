@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Components;
 using Platform.API.Models;
 using Platform.SDK.Services;
-using YouVersion.UsfmReferences;
 #endregion
 
 namespace Platform.SDK.Components.BibleComponents
@@ -102,11 +101,12 @@ namespace Platform.SDK.Components.BibleComponents
 
             try
             {
-                var reference = BuildReference();
-
                 _passage = await PassageService.GetPassageAsync(
                     State.SelectedVersion!.Id,
-                    reference,
+                    State.SelectedBook!.Usfm,
+                    State.SelectedChapter!.Value,
+                    State.SelectedVerseStart!.Value,
+                    State.SelectedVerseEnd,
                     new PassageRequestOptions { Format = Format },
                     _cts.Token);
 
@@ -128,19 +128,6 @@ namespace Platform.SDK.Components.BibleComponents
                 _loading = false;
                 await InvokeAsync(StateHasChanged);
             }
-        }
-
-        private Reference BuildReference()
-        {
-            var book = State.SelectedBook!.Usfm;
-            var chapter = State.SelectedChapter!.Value;
-            var verseStart = State.SelectedVerseStart!.Value;
-            var verseEnd = State.SelectedVerseEnd ?? verseStart;
-
-            return new Reference(
-                book: book,
-                chapter: chapter,
-                verses: [new VerseRange(verseStart, verseEnd)]);
         }
 
         // ── State change ─────────────────────────────────────────────────────

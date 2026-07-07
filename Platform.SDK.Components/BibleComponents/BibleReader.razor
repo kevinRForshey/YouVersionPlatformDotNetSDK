@@ -50,12 +50,7 @@
                      State.SelectedBook is not null &&
                      State.SelectedChapter is not null)
                 {
-                    <VersePicker
-                        Book="@State.SelectedBook.Usfm"
-                        Chapter="@State.SelectedChapter.Value"
-                        Verse="@(State.SelectedVerseStart ?? 0)"
-                        VerseEnd="@(State.SelectedVerseEnd ?? 0)"
-                        VersionId="@State.SelectedVersion.Id" />
+                    <VersePicker />
                 }
                 else
                 {
