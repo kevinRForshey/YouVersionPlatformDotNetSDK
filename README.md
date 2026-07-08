@@ -1,7 +1,8 @@
-# Simple YouVersion Platform SDK
+# YouVersion Platform SDK for .NET
 
-A .NET 10 SDK for the [YouVersion Platform REST API](https://developers.youversion.com), built as
-a set of layered, independently-publishable NuGet packages plus a Blazor Server sample app.
+A .NET 10 SDK for the [YouVersion Platform REST API](https://developers.youversion.com): typed
+HTTP clients, OAuth 2.0 + PKCE authentication, and Blazor UI components, built as a set of
+layered, independently-publishable NuGet packages plus a Blazor Server sample app.
 
 ## Projects
 
@@ -56,8 +57,8 @@ dotnet test Platform.API.Tests
 ## Status
 
 Under active development. Core Bible discovery, passage retrieval, highlight read/write, and OAuth
-are implemented and tested. Not yet in place for a first stable release: CI build/test gates on
-every push/PR, dedicated test coverage for `Platform.SDK.Services`, `Platform.SDK.Components`, and
+are implemented and tested, and CI now runs on every push and PR. Not yet in place for a first
+stable release: dedicated test coverage for `Platform.SDK.Services`, `Platform.SDK.Components`, and
 `YouVersion.UsfmReferences`, and CI-driven package versioning.
 
 ## License
