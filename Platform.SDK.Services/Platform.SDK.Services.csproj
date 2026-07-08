@@ -8,7 +8,6 @@
     <!-- NuGet package identity -->
     <PackageId>YouVersion.Platform.SDK.Services</PackageId>
     <Authors>Kevin Forshey</Authors>
-    <Company>MyndTek Ltd.</Company>
     <Product>YouVersion Platform SDK Services</Product>
     <Description>Business-logic services (VersionService, PassageService, BookService, HighlightService, BibleReaderStateService) for the YouVersion Platform SDK.</Description>
     <PackageTags>youversion;bible;sdk;services</PackageTags>

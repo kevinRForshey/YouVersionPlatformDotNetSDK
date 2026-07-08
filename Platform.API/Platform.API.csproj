@@ -8,7 +8,6 @@
     <!-- NuGet package identity -->
     <PackageId>YouVersion.Platform.API</PackageId>
     <Authors>Kevin Forshey</Authors>
-    <Company>MyndTek Ltd.</Company>
     <Product>YouVersion Platform API Client</Product>
     <Description>HTTP client SDK for the YouVersion Platform REST API. Provides typed clients for Bibles, Passages, and Highlights with built-in Microsoft.Extensions.Http integration and DI support.</Description>
     <PackageTags>youversion;bible;api;httpclient;sdk;dependencyinjection</PackageTags>

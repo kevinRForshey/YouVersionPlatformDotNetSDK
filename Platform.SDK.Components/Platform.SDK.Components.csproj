@@ -8,7 +8,6 @@
       <!-- NuGet package identity -->
       <PackageId>YouVersion.Platform.SDK.Components</PackageId>
       <Authors>Kevin Forshey</Authors>
-      <Company>MyndTek Ltd.</Company>
       <Product>YouVersion Platform SDK Components</Product>
       <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, click-to-highlight passage display, highlight list, and related components.</Description>
       <PackageTags>youversion;bible;blazor;components;sdk</PackageTags>

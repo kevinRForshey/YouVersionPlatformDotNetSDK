@@ -8,7 +8,6 @@
     <!-- NuGet package identity -->
     <PackageId>YouVersion.Platform.API.Models</PackageId>
     <Authors>Kevin Forshey</Authors>
-    <Company>MyndTek Ltd.</Company>
     <Product>YouVersion Platform API Models</Product>
     <Description>Domain model types (Versions, Books, Chapters, Verses, Passages, Highlights) for the YouVersion Platform REST API.</Description>
     <PackageTags>youversion;bible;api;models;sdk</PackageTags>

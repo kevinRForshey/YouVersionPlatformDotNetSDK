@@ -18,12 +18,11 @@
     <Version>3.1.1</Version>
 
     <Title>YouVersion USFM References</Title>
-    <Authors>YouVersion</Authors>
-    <Company>YouVersion</Company>
+    <Authors>Kevin Forshey</Authors>
     <Product>YouVersion.UsfmReferences</Product>
-    <Description>Parsing, validation, and conversion utilities for USFM (Unified Standard Format Markers) scripture references. A C# port of the youversion/usfm-references Python library.</Description>
+    <Description>Parsing, validation, and conversion utilities for USFM (Unified Standard Format Markers) scripture references. An unofficial C# port of the youversion/usfm-references Python library; not affiliated with or endorsed by YouVersion.</Description>
     <PackageTags>usfm;bible;scripture;reference;youversion;parsing;validation;canon</PackageTags>
-    <Copyright>Copyright © 2026 YouVersion</Copyright>
+    <Copyright>Copyright © 2026 Kevin Forshey</Copyright>
 
     <!-- License: MIT, consistent with the upstream project. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -51,10 +50,6 @@
     <!-- SourceLink ships in the .NET 8+ SDK; no extra PackageReference needed. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-
-    <!-- Deterministic output on CI only, so local builds stay clean. -->
-    <Deterministic>true</Deterministic>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <!-- Pack the solution-level README into the package root. -->
