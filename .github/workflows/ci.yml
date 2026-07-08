@@ -17,11 +17,29 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Restore
-        run: dotnet restore YouVersionPlatform.slnx
-
-      - name: Build
-        run: dotnet build YouVersionPlatform.slnx -c Release --no-restore
+      # PlatformTestApp consumes YouVersion.Platform.SDK.Components as a packed NuGet
+      # package (via the "YouVersionLocal" feed in nuget.config), not a ProjectReference,
+      # so it exercises the real consumer experience. Build and pack the libraries in
+      # dependency order first so that feed is populated before anything restores against it.
+      - name: Build libraries
+        run: |
+          dotnet build Platform.API.Models -c Release
+          dotnet build YouVersion.UsfmReferences -c Release
+          dotnet build Platform.API -c Release
+          dotnet build Platform.SDK.Services -c Release
+          dotnet build Platform.SDK.Components -c Release
 
       - name: Test
-        run: dotnet test Platform.API.Tests -c Release --no-build --verbosity normal
+        run: dotnet test Platform.API.Tests -c Release --verbosity normal
+
+      - name: Pack libraries to local feed
+        run: |
+          mkdir -p packages
+          dotnet pack Platform.API.Models -c Release --no-build -o packages
+          dotnet pack YouVersion.UsfmReferences -c Release --no-build -o packages
+          dotnet pack Platform.API -c Release --no-build -o packages
+          dotnet pack Platform.SDK.Services -c Release --no-build -o packages
+          dotnet pack Platform.SDK.Components -c Release --no-build -o packages
+
+      - name: Build PlatformTestApp
+        run: dotnet build PlatformTestApp -c Release
