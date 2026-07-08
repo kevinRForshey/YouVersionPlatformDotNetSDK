@@ -1,8 +1,7 @@
 # YouVersion Platform SDK for .NET
 
-A .NET 10 SDK for the [YouVersion Platform REST API](https://developers.youversion.com): typed
-HTTP clients, OAuth 2.0 + PKCE authentication, and Blazor UI components, built as a set of
-layered, independently-publishable NuGet packages plus a Blazor Server sample app.
+A .NET 10 SDK for the [YouVersion Platform REST API](https://developers.youversion.com), built as
+a set of layered, independently-publishable NuGet packages plus a Blazor Server sample app.
 
 ## Projects
 
@@ -15,7 +14,6 @@ layered, independently-publishable NuGet packages plus a Blazor Server sample ap
 | `YouVersion.UsfmReferences` | USFM scripture reference parsing/validation — a C# port of `youversion/usfm-references` | — |
 | `PlatformTestApp` | Blazor Server sample app exercising the full stack, including a per-user OAuth token storage pattern | — |
 | `Platform.API.Tests` | Unit tests for `Platform.API` (xUnit, FluentAssertions, Moq) plus an architecture fitness test enforcing the client-boundary rule below | — |
-| `YouVersion.UsfmReferences.Tests` | Unit tests for `YouVersion.UsfmReferences` (xUnit, FluentAssertions) covering parsing, validation, and book-name resolution, including edge cases | — |
 
 All projects target `net10.0`.
 
@@ -53,15 +51,14 @@ multi-user token storage.
 ```bash
 dotnet build YouVersionPlatform.slnx
 dotnet test Platform.API.Tests
-dotnet test YouVersion.UsfmReferences.Tests
 ```
 
 ## Status
 
-Under active development. Core Bible discovery, passage retrieval, highlight read/write, OAuth, and
-USFM reference parsing are implemented and tested, and CI now runs on every push and PR. Not yet in
-place for a first stable release: dedicated test coverage for `Platform.SDK.Services` and
-`Platform.SDK.Components`, and CI-driven package versioning.
+Under active development. Core Bible discovery, passage retrieval, highlight read/write, and OAuth
+are implemented and tested. Not yet in place for a first stable release: CI build/test gates on
+every push/PR, dedicated test coverage for `Platform.SDK.Services`, `Platform.SDK.Components`, and
+`YouVersion.UsfmReferences`, and CI-driven package versioning.
 
 ## License
 
