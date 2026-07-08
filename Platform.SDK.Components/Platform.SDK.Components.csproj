@@ -13,8 +13,8 @@
       <Product>YouVersion Platform SDK Components</Product>
       <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, passage display, and related components with Fluent UI integration.</Description>
       <PackageTags>youversion;bible;blazor;components;sdk;fluentui</PackageTags>
-      <PackageProjectUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</PackageProjectUrl>
-      <RepositoryUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</RepositoryUrl>
+      <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
       <PackageReadmeFile>README.md</PackageReadmeFile>
 

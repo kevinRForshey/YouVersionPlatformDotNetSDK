@@ -28,8 +28,8 @@
     <!-- README shown on the nuget.org package page. -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     
-    <PackageProjectUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <PackageReleaseNotes>Initial .NET release. Feature-equivalent port of usfm-references 3.1.1.</PackageReleaseNotes>

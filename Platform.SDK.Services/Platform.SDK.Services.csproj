@@ -13,8 +13,8 @@
     <Product>YouVersion Platform SDK Services</Product>
     <Description>Business-logic services (VersionService, PassageService, BookService, BibleReaderStateService) for the YouVersion Platform SDK.</Description>
     <PackageTags>youversion;bible;sdk;services</PackageTags>
-    <PackageProjectUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
 

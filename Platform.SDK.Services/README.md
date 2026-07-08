@@ -1,6 +1,6 @@
 # YouVersion.Platform.SDK.Services
 
-Business-logic services for the [YouVersion Platform SDK](https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK).
+Business-logic services for the [YouVersion Platform SDK](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK).
 
 Provides `VersionService`, `PassageService`, `BookService`, `ChapterService`, and `BibleReaderStateService` — the stateful layer between the raw HTTP client (`YouVersion.Platform.API`) and the Blazor component library (`YouVersion.Platform.SDK.Components`).
 
