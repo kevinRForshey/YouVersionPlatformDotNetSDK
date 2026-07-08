@@ -7,7 +7,6 @@
 
     <!-- NuGet package identity -->
     <PackageId>YouVersion.Platform.API</PackageId>
-    <Version>1.0.0</Version>
     <Authors>Kevin Forshey</Authors>
     <Company>MyndTek Ltd.</Company>
     <Product>YouVersion Platform API Client</Product>

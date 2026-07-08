@@ -7,7 +7,6 @@
 
       <!-- NuGet package identity -->
       <PackageId>YouVersion.Platform.SDK.Components</PackageId>
-      <Version>1.0.0</Version>
       <Authors>Kevin Forshey</Authors>
       <Company>MyndTek Ltd.</Company>
       <Product>YouVersion Platform SDK Components</Product>

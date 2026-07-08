@@ -11,6 +11,9 @@
 
   <!-- ============================ NuGet package metadata ============================ -->
   <PropertyGroup>
+    <!-- Versioned independently of the MinVer-driven Platform.* packages: this is a
+         standalone port tracking the upstream youversion/usfm-references release number. -->
+    <MinVerSkip>true</MinVerSkip>
     <PackageId>YouVersion.UsfmReferences</PackageId>
     <Version>3.1.1</Version>
 
