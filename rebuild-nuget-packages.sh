@@ -86,9 +86,10 @@ if $CLEAR_CACHE; then
 fi
 
 # Note: we deliberately build/pack each project directly instead of running
-# `dotnet restore`/`build` against YouVersionPlatform.slnx. The .slnx currently
-# references Platform.SDK.Components.Tests, which doesn't exist on disk, so any
-# solution-wide restore/build/test fails outright.
+# `dotnet restore`/`build` against YouVersionPlatform.slnx, since PlatformTestApp
+# consumes YouVersion.Platform.SDK.Components as a packed NuGet package (see the
+# "YouVersionLocal" feed in nuget.config) and would fail to restore before that
+# feed is populated by the packing loop below.
 for entry in "${PROJECTS[@]}"; do
   project_dir="${entry%%:*}"
   log "Restoring & building $project_dir ($CONFIGURATION)"
@@ -98,6 +99,11 @@ done
 if $RUN_TESTS && [[ -d "$SCRIPT_DIR/Platform.API.Tests" ]]; then
   log "Running Platform.API.Tests"
   dotnet test "Platform.API.Tests" -c "$CONFIGURATION"
+fi
+
+if $RUN_TESTS && [[ -d "$SCRIPT_DIR/YouVersion.UsfmReferences.Tests" ]]; then
+  log "Running YouVersion.UsfmReferences.Tests"
+  dotnet test "YouVersion.UsfmReferences.Tests" -c "$CONFIGURATION"
 fi
 
 for entry in "${PROJECTS[@]}"; do

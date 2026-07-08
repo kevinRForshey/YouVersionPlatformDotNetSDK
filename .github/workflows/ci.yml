@@ -37,7 +37,9 @@ jobs:
           dotnet build Platform.SDK.Components -c Release
 
       - name: Test
-        run: dotnet test Platform.API.Tests -c Release --verbosity normal
+        run: |
+          dotnet test Platform.API.Tests -c Release --verbosity normal
+          dotnet test YouVersion.UsfmReferences.Tests -c Release --verbosity normal
 
       - name: Pack libraries to local feed
         run: |
