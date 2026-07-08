@@ -6,7 +6,7 @@ Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.
 
 - `IBibleClient` for Bible discovery, version metadata, and book/chapter/verse structure.
 - `IPassageClient` for passage text/HTML retrieval.
-- `IHighlightClient` for highlight read/write operations. (not fully implemented)
+- `IHighlightClient` for highlight read/write operations (get per-passage, recent colors, create-or-update, clear).
 - `IYouVersionOAuthClient` for authorization-code + PKCE OAuth flow.
 - `ITokenProvider` (default: `InMemoryTokenProvider`) for token persistence.
 - Built-in `HttpClient` resilience and outbound rate limiting.
@@ -54,7 +54,9 @@ Example `appsettings.json`:
 
 ## OAuth setup (optional)
 
-Use this only when you need user-scoped operations (for example, highlight writes).
+Use this only when you need user-scoped operations (for example, highlight writes). YouVersion's
+sign-in API only supports the `openid`, `profile`, and `email` scopes — there is no separate scope
+for passages or highlights; any authenticated user can call those endpoints.
 
 ```csharp
 builder.Services
@@ -63,7 +65,7 @@ builder.Services
     {
         options.ClientId = builder.Configuration["YouVersionOAuth:ClientId"]!;
         options.RedirectUri = new Uri(builder.Configuration["YouVersionOAuth:RedirectUri"]!);
-        options.Scopes = "passages highlights";
+        options.Scopes = "openid profile email";
     });
 ```
 
@@ -122,15 +124,20 @@ public sealed class PassageReader(IPassageClient passageClient)
 }
 ```
 
-### Create a highlight (OAuth required)
+### Create or update a highlight (OAuth required)
 
 ```csharp
 public sealed class HighlightWriter(IHighlightClient highlightClient)
 {
     public Task<Highlight> HighlightVerseAsync(CancellationToken ct)
-        => highlightClient.CreateHighlightAsync(3034, "JHN.3.16", HighlightColor.Yellow, ct);
+        => highlightClient.CreateOrUpdateHighlightAsync(3034, Reference.FromString("JHN.3.16"), "44aa44", ct);
 }
 ```
+
+Highlights have no opaque id — a highlight is identified by `(bibleId, passageId)`. Creating a
+highlight for a passage that already has one updates its color. Colors are hex strings (e.g.
+`"44aa44"`), not a fixed enum. `ClearHighlightsAsync(bibleId, passage, ct)` removes a passage's
+highlight(s), and `GetRecentColorsAsync(ct)` returns the colors the user has most recently used.
 
 ## Resilience and outbound rate limiting
 
@@ -155,16 +162,30 @@ If you see local throttling, increase burst and/or queue gradually. If upstream 
 
 ## Token storage
 
-Default OAuth token storage is in-memory and process-local. For production apps, register a custom `ITokenProvider` before `AddYouVersionOAuth(...)`.
+Default OAuth token storage (`InMemoryTokenProvider`) is a **process-wide singleton** — fine for
+single-user tools and local testing, but in a multi-user host (e.g. Blazor Server) it leaks one
+user's token to every other user on the same process. For any app with more than one concurrent
+user, register a custom, per-user-scoped `ITokenProvider` before `AddYouVersionOAuth(...)`:
 
 ```csharp
-builder.Services.AddSingleton<ITokenProvider, MyPersistentTokenProvider>();
+builder.Services.AddScoped<ITokenProvider, MyPerUserTokenProvider>();
 ```
+
+For a working example that scopes tokens per browser session using `IDistributedCache`, see
+`PlatformTestApp/Auth/SessionTokenProvider.cs` and `CircuitSessionKeyAccessor.cs` in this
+solution's test app — it keys stored tokens off a session id that survives the handoff from
+Blazor Server prerender into the live interactive circuit.
+
+## Exceptions
+
+- `YouVersionApiException` — the API returned a non-success HTTP response. Carries `StatusCode` and the raw `ResponseBody`.
+- `YouVersionEmptyResponseException` (derives from `YouVersionApiException`) — the HTTP call itself succeeded (`200 OK`), but the body was null, empty, or failed to deserialize into the expected type. Check for this type first (or catch it separately) rather than branching on `StatusCode`, since it doesn't carry a real wire-level error status.
 
 ## Troubleshooting
 
 - `InvalidOperationException` mentioning `AddYouVersionApiClients`: call order is wrong; register API clients first.
 - `YouVersionApiException` with `401`/`403`: check app key and (for write ops) OAuth token state.
+- `YouVersionEmptyResponseException`: the request succeeded but returned no usable body — usually a transient upstream issue; safe to retry.
 - Local outbound throttling errors: tune `OutboundRequestsPerSecond`, `OutboundBurstSize`, and `OutboundQueueLimit`.
 
 ## Additional docs

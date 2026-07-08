@@ -24,12 +24,21 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
     /// <summary>The last request received by this handler.</summary>
     public HttpRequestMessage? LastRequest { get; private set; }
 
-    protected override Task<HttpResponseMessage> SendAsync(
+    /// <summary>
+    /// The last request's content, read eagerly since the caller may dispose its
+    /// <see cref="HttpContent"/> before the test gets a chance to inspect it.
+    /// </summary>
+    public string? LastRequestBody { get; private set; }
+
+    protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
         LastRequest = request;
-        return Task.FromResult(_response);
+        LastRequestBody = request.Content is null
+            ? null
+            : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        return _response;
     }
 
     protected override void Dispose(bool disposing)

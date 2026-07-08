@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Platform.API.Configuration;
 using Platform.API.Http;
+using Platform.API.Tests.Fakes;
 using Xunit;
 
 namespace Platform.API.Tests.Http;
@@ -82,19 +83,6 @@ public sealed class OutboundRateLimitingHandlerTests
         };
 
         return (inner, httpClient);
-    }
-
-    private sealed class CapturingHandler : HttpMessageHandler
-    {
-        public int CallCount { get; private set; }
-
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            CallCount++;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
-        }
     }
 }
 

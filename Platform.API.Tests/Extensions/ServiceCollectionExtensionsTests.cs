@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Platform.API.Clients;
 using Platform.API.Extensions;
 using Platform.API.OAuth;
+using Platform.API.Tests.Fakes;
 using YouVersion.UsfmReferences;
 using Xunit;
 
@@ -123,6 +124,47 @@ public sealed class ServiceCollectionExtensionsTests
         var act = () => services.AddYouVersionApiClients((Action<Configuration.YouVersionApiOptions>)null!);
 
         act.Should().Throw<ArgumentNullException>();
+    }
+
+    // -------------------------------------------------------------------------
+    // End-to-end: bearer token actually flows through IHighlightClient's pipeline
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task AddYouVersionOAuth_AttachesBearerToken_ToLiveHighlightClientRequest()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddYouVersionApiClients(o => o.AppKey = "test-key");
+        services.AddYouVersionOAuth(o =>
+        {
+            o.ClientId = "test-client";
+            o.RedirectUri = new Uri("https://localhost/callback");
+        });
+
+        // Intercept the same named pipeline AddYouVersionOAuth appended the bearer handler to,
+        // via the shared constant rather than re-deriving the client name independently.
+        var capturingHandler = new CapturingHandler(
+            responseBody: """{"data":[]}""");
+        services.AddHttpClient(ServiceCollectionExtensions.HighlightClientName)
+            .ConfigurePrimaryHttpMessageHandler(() => capturingHandler);
+
+        var sp = services.BuildServiceProvider();
+
+        var tokenProvider = sp.GetRequiredService<ITokenProvider>();
+        await tokenProvider.StoreTokenAsync(new OAuthTokenResponse
+        {
+            AccessToken = "live-access-token",
+            ExpiresIn = 3600,
+            ReceivedAt = DateTimeOffset.UtcNow
+        });
+
+        var highlightClient = sp.GetRequiredService<IHighlightClient>();
+        await highlightClient.GetHighlightsAsync(3034, Reference.FromString("JHN.3.16"));
+
+        capturingHandler.LastRequest!.Headers.Authorization.Should().NotBeNull();
+        capturingHandler.LastRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
+        capturingHandler.LastRequest.Headers.Authorization!.Parameter.Should().Be("live-access-token");
     }
 
     // -------------------------------------------------------------------------

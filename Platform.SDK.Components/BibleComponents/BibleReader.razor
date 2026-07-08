@@ -79,7 +79,12 @@
     }
     else
     {
-        <VerseComponent Passage="@(_passage!)" Copyright="@_copyright" />
+        <VerseComponent Passage="@(_passage!)"
+                         Copyright="@_copyright"
+                         VersionId="@_versionId"
+                         EnableHighlighting="@EnableHighlighting"
+                         OnHighlightCreated="@OnHighlightCreated"
+                         OnHighlightCleared="@OnHighlightCleared" />
     }
 }
 else if (_loading)

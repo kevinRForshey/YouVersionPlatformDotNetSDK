@@ -27,7 +27,13 @@ builder.Services.AddYouVersionCaching(o =>
 // Must be registered before AddYouVersionOAuth: the library only adds its default
 // InMemoryTokenProvider via TryAddSingleton, which is a per-process singleton shared
 // by every user. Registering a per-session provider first makes TryAddSingleton a no-op.
+//
+// CircuitSessionKeyAccessor + IDistributedCache (rather than ISession directly) so the token
+// stays readable for the full lifetime of an interactive Blazor Server circuit, not just during
+// the HTTP request that stored it — HttpContext/ISession are only live during that request.
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddScoped<CircuitSessionKeyAccessor>();
 builder.Services.AddScoped<ITokenProvider, SessionTokenProvider>();
 
 builder.Services.AddYouVersionOAuth(o =>
@@ -42,7 +48,6 @@ builder.Services.AddYouVersionOAuth(o =>
 builder.Services.AddYouVersionComponents();
 
 // Session support for OAuth PKCE code verifier / state storage
-builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(o =>
 {
     o.Cookie.HttpOnly = true;
@@ -74,6 +79,16 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
         ctx.Session.SetString("oauth_code", ctx.Request.Query["code"].ToString());
         ctx.Session.SetString("oauth_state_return", ctx.Request.Query["state"].ToString());
         ctx.Response.Redirect("/auth/callback-complete");
+        return;
+    }
+
+    // Final leg of the Data Exchange consent flow (triggered from /auth/callback-complete after
+    // sign-in). YouVersion redirects here with the outcome instead of returning a token — the
+    // access token obtained during sign-in is what becomes authorized for the granted permission.
+    if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("data_exchange_status"))
+    {
+        var granted = ctx.Request.Query["data_exchange_status"].ToString() == "granted";
+        ctx.Response.Redirect($"/?auth_mode=code&highlights={(granted ? "granted" : "denied")}");
         return;
     }
 
@@ -143,13 +158,18 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
     var verifier = ctx.Session.GetString("pkce_verifier");
     var expected = ctx.Session.GetString("oauth_state");
 
+    ctx.Session.Remove("oauth_code");
+    ctx.Session.Remove("oauth_state_return");
+    ctx.Session.Remove("pkce_verifier");
+    ctx.Session.Remove("oauth_state");
+
     string? exchangeError = null;
 
     if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(verifier))
     {
         exchangeError = "Session expired or invalid callback. Please try signing in again.";
     }
-    else if (!string.IsNullOrEmpty(expected) && expected != retState)
+    else if (!oauthClient.ValidateState(expected, retState))
     {
         exchangeError = "State mismatch — possible CSRF attempt. Please try signing in again.";
     }
@@ -167,14 +187,24 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
         }
     }
 
-    ctx.Session.Remove("oauth_code");
-    ctx.Session.Remove("oauth_state_return");
-    ctx.Session.Remove("pkce_verifier");
-    ctx.Session.Remove("oauth_state");
+    if (exchangeError is not null)
+        return Results.Redirect($"/?oauth_error={Uri.EscapeDataString(exchangeError)}&auth_mode=code");
 
-    return exchangeError is not null
-        ? Results.Redirect($"/?oauth_error={Uri.EscapeDataString(exchangeError)}&auth_mode=code")
-        : Results.Redirect("/?auth_mode=code");
+    // Sign-in succeeded. Basic sign-in only grants identity — chain into the Data Exchange
+    // consent flow to additionally request highlights access. If this step fails, sign-in still
+    // succeeds; the user simply won't have highlights access yet.
+    try
+    {
+        var dataExchangeToken = await oauthClient.RequestPermissionsAsync(["highlights"]);
+        var approvalUrl = oauthClient.BuildDataExchangeApprovalUrl(dataExchangeToken.Token);
+        return Results.Redirect(approvalUrl.ToString());
+    }
+    catch (Exception ex)
+    {
+        ctx.RequestServices.GetRequiredService<ILogger<Program>>()
+            .LogError(ex, "Data exchange permission request failed.");
+        return Results.Redirect("/?auth_mode=code");
+    }
 });
 
 app.Run();

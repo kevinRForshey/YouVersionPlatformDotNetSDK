@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
 
 using Platform.API.OAuth;
 
@@ -8,52 +8,52 @@ namespace PlatformTestApp.Auth;
 
 /// <summary>
 /// Per-user replacement for the library's default <c>InMemoryTokenProvider</c>, which is a
-/// process-wide singleton and leaks one user's token to every other user. Backs the token
-/// with ASP.NET Core <see cref="ISession"/> (the same session store already used for the
-/// PKCE code verifier / state in <c>Program.cs</c>) so each browser session gets its own copy.
+/// process-wide singleton and leaks one user's token to every other user. Backs the token with
+/// <see cref="IDistributedCache"/>, keyed by the stable per-browser id from
+/// <see cref="CircuitSessionKeyAccessor"/>, so each browser session gets its own copy and the
+/// token remains readable for the full lifetime of an interactive Blazor Server circuit (not just
+/// during the HTTP request that stored it).
 /// </summary>
 /// <remarks>
 /// Must be registered <b>before</b> <c>AddYouVersionOAuth</c>, since the library only adds its
 /// default via <c>TryAddSingleton</c>:
 /// <code>
+/// builder.Services.AddScoped&lt;CircuitSessionKeyAccessor&gt;();
 /// builder.Services.AddScoped&lt;ITokenProvider, SessionTokenProvider&gt;();
 /// builder.Services.AddYouVersionOAuth(o => { ... });
 /// </code>
-/// <para>
-/// Known limitation: <see cref="ISession"/> requires a live <see cref="HttpContext"/>, which
-/// Blazor Server only has during the initial static-SSR render of a request. Once a component
-/// is running on its live interactive circuit (e.g. the second check in
-/// <c>YouVersionAuth.OnAfterRenderAsync</c>), <see cref="IHttpContextAccessor.HttpContext"/> is
-/// <see langword="null"/> and this provider reports "no token" rather than throwing. That's
-/// harmless for the login round-trip itself (the OAuth callback redirect always starts a fresh
-/// HTTP request, so the token is written and re-read with a live context), but it means a token
-/// change that happens *without* a page load — e.g. a background refresh — won't be picked up by
-/// an already-connected circuit without a full navigation.
-/// </para>
 /// </remarks>
 public sealed class SessionTokenProvider : ITokenProvider
 {
-    private const string SessionKey = "yv_oauth_token";
-
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public SessionTokenProvider(IHttpContextAccessor httpContextAccessor)
+    private static readonly DistributedCacheEntryOptions CacheOptions = new()
     {
-        _httpContextAccessor = httpContextAccessor;
+        SlidingExpiration = TimeSpan.FromMinutes(30)
+    };
+
+    private readonly CircuitSessionKeyAccessor _keyAccessor;
+    private readonly IDistributedCache _cache;
+
+    public SessionTokenProvider(CircuitSessionKeyAccessor keyAccessor, IDistributedCache cache)
+    {
+        _keyAccessor = keyAccessor;
+        _cache = cache;
     }
 
-    public Task<OAuthTokenResponse?> GetTokenAsync(CancellationToken cancellationToken = default)
+    public async Task<OAuthTokenResponse?> GetTokenAsync(CancellationToken cancellationToken = default)
     {
-        var session = _httpContextAccessor.HttpContext?.Session;
-        var json = session?.GetString(SessionKey);
+        var key = _keyAccessor.GetKey();
+        if (key is null)
+            return null;
+
+        var json = await _cache.GetStringAsync(CacheKey(key), cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrEmpty(json))
-            return Task.FromResult<OAuthTokenResponse?>(null);
+            return null;
 
         var stored = JsonSerializer.Deserialize<StoredToken>(json);
         if (stored is null)
-            return Task.FromResult<OAuthTokenResponse?>(null);
+            return null;
 
-        var token = new OAuthTokenResponse
+        return new OAuthTokenResponse
         {
             AccessToken = stored.AccessToken,
             RefreshToken = stored.RefreshToken,
@@ -62,16 +62,14 @@ public sealed class SessionTokenProvider : ITokenProvider
             ExpiresIn = stored.ExpiresIn,
             ReceivedAt = stored.ReceivedAt,
         };
-        return Task.FromResult<OAuthTokenResponse?>(token);
     }
 
-    public Task StoreTokenAsync(OAuthTokenResponse token, CancellationToken cancellationToken = default)
+    public async Task StoreTokenAsync(OAuthTokenResponse token, CancellationToken cancellationToken = default)
     {
-        var session = _httpContextAccessor.HttpContext?.Session
+        var key = _keyAccessor.GetKey()
             ?? throw new InvalidOperationException(
-                "No active HttpContext/Session available to store the OAuth token. " +
-                "StoreTokenAsync must be called from a request with a live session " +
-                "(e.g. the /auth/callback-complete endpoint), not from a connected Blazor circuit.");
+                "No session key available to store the OAuth token. StoreTokenAsync must be called " +
+                "from a request with a live HttpContext (e.g. the /auth/callback-complete endpoint).");
 
         // OAuthTokenResponse.ReceivedAt is [JsonIgnore] -- it must be carried separately here,
         // or a reloaded token deserializes with ReceivedAt = "now" and looks freshly issued
@@ -79,15 +77,19 @@ public sealed class SessionTokenProvider : ITokenProvider
         var stored = new StoredToken(
             token.AccessToken, token.RefreshToken, token.IdToken,
             token.TokenType, token.ExpiresIn, token.ReceivedAt);
-        session.SetString(SessionKey, JsonSerializer.Serialize(stored));
-        return Task.CompletedTask;
+
+        await _cache.SetStringAsync(CacheKey(key), JsonSerializer.Serialize(stored), CacheOptions, cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    public Task ClearTokenAsync(CancellationToken cancellationToken = default)
+    public async Task ClearTokenAsync(CancellationToken cancellationToken = default)
     {
-        _httpContextAccessor.HttpContext?.Session.Remove(SessionKey);
-        return Task.CompletedTask;
+        var key = _keyAccessor.GetKey();
+        if (key is not null)
+            await _cache.RemoveAsync(CacheKey(key), cancellationToken).ConfigureAwait(false);
     }
+
+    private static string CacheKey(string sessionKey) => $"yv_oauth_token:{sessionKey}";
 
     private sealed record StoredToken(
         string AccessToken,
