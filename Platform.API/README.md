@@ -6,7 +6,7 @@ Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.
 
 - `IBibleClient` for Bible discovery, version metadata, and book/chapter/verse structure.
 - `IPassageClient` for passage text/HTML retrieval.
-- `IHighlightClient` for highlight read/write operations. (not fully implemented)
+- `IHighlightClient` for highlight read/write operations (list, create, delete).
 - `IYouVersionOAuthClient` for authorization-code + PKCE OAuth flow.
 - `ITokenProvider` (default: `InMemoryTokenProvider`) for token persistence.
 - Built-in `HttpClient` resilience and outbound rate limiting.
