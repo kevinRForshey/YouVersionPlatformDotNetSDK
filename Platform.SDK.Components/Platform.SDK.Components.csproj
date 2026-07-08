@@ -7,11 +7,11 @@
 
       <!-- NuGet package identity -->
       <PackageId>YouVersion.Platform.SDK.Components</PackageId>
-      <Version>1.0.0</Version>
+      <Version>1.0.2</Version>
       <Authors>Kevin Forshey</Authors>
       <Company>MyndTek Ltd.</Company>
       <Product>YouVersion Platform SDK Components</Product>
-      <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, passage display, and related components with Fluent UI integration.</Description>
+      <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, click-to-highlight passage display, highlight list, and related components with Fluent UI integration.</Description>
       <PackageTags>youversion;bible;blazor;components;sdk;fluentui</PackageTags>
       <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
       <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>

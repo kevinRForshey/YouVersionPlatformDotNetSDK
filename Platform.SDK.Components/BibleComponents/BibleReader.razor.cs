@@ -66,6 +66,25 @@ namespace Platform.SDK.Components.BibleComponents
         /// </summary>
         [Parameter] public string? OAuthError { get; set; }
 
+        /// <summary>
+        /// Fired after the user creates or updates a highlight from the default (non-templated)
+        /// passage display. Has no effect when a custom <see cref="PassageTemplate"/> is supplied.
+        /// </summary>
+        [Parameter] public EventCallback<Highlight> OnHighlightCreated { get; set; }
+
+        /// <summary>
+        /// Fired after the user removes a highlight from the default (non-templated) passage
+        /// display. Has no effect when a custom <see cref="PassageTemplate"/> is supplied.
+        /// </summary>
+        [Parameter] public EventCallback<Highlight> OnHighlightCleared { get; set; }
+
+        /// <summary>
+        /// Whether the default (non-templated) passage display shows the highlighting toolbar and
+        /// verse interactions. Defaults to <see langword="true"/>. Has no effect when a custom
+        /// <see cref="PassageTemplate"/> is supplied.
+        /// </summary>
+        [Parameter] public bool EnableHighlighting { get; set; } = true;
+
         // ── Private state ────────────────────────────────────────────────────
         private Passage? _passage;
         private bool _loading;
@@ -73,6 +92,7 @@ namespace Platform.SDK.Components.BibleComponents
         private CancellationTokenSource? _cts;
 
         private string? _copyright;
+        private int _versionId;
 
         // ── Lifecycle ────────────────────────────────────────────────────────
         protected override Task OnInitializedAsync()
@@ -111,6 +131,7 @@ namespace Platform.SDK.Components.BibleComponents
                     _cts.Token);
 
                 _copyright = State.SelectedVersion.Copyright;
+                _versionId = State.SelectedVersion.Id;
 
                 if (OnPassageLoaded.HasDelegate)
                     await OnPassageLoaded.InvokeAsync(_passage);

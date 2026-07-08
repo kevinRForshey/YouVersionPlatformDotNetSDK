@@ -1,44 +1,3 @@
-/* ... existing code ... */
-
-.verse-content {
-    position: relative;
-    color: #3f342c;
-    font-size: clamp(1.12rem, 2vw, 1.35rem);
-    line-height: 1.85;
-    letter-spacing: -0.01em;
-}
-
-.verse-content ::deep(p) {
-    margin-bottom: 1rem;
-}
-
-.verse-content ::deep(p:last-child) {
-    margin-bottom: 0;
-}
-
-.verse-content ::deep(.label),
-.verse-content ::deep(.chapter),
-.verse-content ::deep(.verse),
-.verse-content ::deep(sup) {
-    color: #d96016;
-    font-weight: 800;
-}
-
-.verse-content::before {
-    content: "“";
-    position: absolute;
-    top: -1.15rem;
-    left: -0.25rem;
-    color: rgba(255, 122, 26, 0.12);
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 7rem;
-    font-weight: 900;
-    line-height: 1;
-    pointer-events: none;
-}
-
-
-
 .verse-component {
     width: 100%;
     margin-top: 1.5rem;
@@ -160,20 +119,26 @@
     letter-spacing: -0.01em;
 }
 
-.verse-content :deep(p) {
+.verse-content :deep(p),
+.verse-content :deep(.p) {
     margin-bottom: 1rem;
 }
 
-.verse-content :deep(p:last-child) {
+.verse-content :deep(p:last-child),
+.verse-content :deep(.p:last-child) {
     margin-bottom: 0;
 }
 
-.verse-content :deep(.label),
-.verse-content :deep(.chapter),
-.verse-content :deep(.verse),
-.verse-content :deep(sup) {
-    color: #d96016;
-    font-weight: 800;
+/* Words of Jesus */
+.verse-content :deep(.wj) {
+    color: #c0392b;
+}
+
+/* Added text / nomina divina */
+.verse-content :deep(.add),
+.verse-content :deep(.nd) {
+    font-style: italic;
+    color: #8a7a68;
 }
 
 .verse-content::before {
@@ -239,4 +204,83 @@
     .verse-content {
         line-height: 1.75;
     }
+}
+
+/* ── Highlighting toolbar ─────────────────────────────────────────────── */
+
+.highlight-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    background: rgba(255, 122, 26, 0.06);
+    border: 1px solid rgba(255, 140, 66, 0.18);
+}
+
+.highlight-toolbar-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #6b5a4a;
+}
+
+.highlight-swatches {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.highlight-swatch {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.highlight-swatch:hover {
+    transform: scale(1.15);
+}
+
+.highlight-swatch--armed {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.25);
+    transform: scale(1.15);
+}
+
+.highlight-toolbar-error {
+    color: #b3261e;
+    font-size: 0.85rem;
+}
+
+/* ── Per-verse highlighting ───────────────────────────────────────────── */
+
+.verse-segment {
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.verse-segment--armable {
+    cursor: pointer;
+}
+
+.verse-segment--armable:hover {
+    background-color: rgba(255, 122, 26, 0.14);
+}
+
+.verse-segment--highlighted {
+    cursor: pointer;
+}
+
+.verse-num {
+    color: #d96016;
+    font-weight: 800;
+    font-size: 0.7em;
+    margin-right: 0.1em;
+    user-select: none;
+}
+
+.verse-segment-saving {
+    font-size: 0.75em;
 }

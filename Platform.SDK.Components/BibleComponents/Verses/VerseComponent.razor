@@ -1,3 +1,5 @@
+@using Platform.API.Models
+
 <div class="verse-component">
     <div class="verse-card">
         <div class="verse-card-glow" aria-hidden="true"></div>
@@ -15,8 +17,61 @@
 
         <div class="verse-divider"></div>
 
+        @if (CanShowHighlightUi)
+        {
+            @if (_isSignedIn)
+            {
+                <div class="highlight-toolbar">
+                    <span class="highlight-toolbar-label">Highlight a verse:</span>
+                    <div class="highlight-swatches">
+                        @foreach (var color in AllColors)
+                        {
+                            <button type="button"
+                                    class="highlight-swatch @(_armedColor == color.Hex ? "highlight-swatch--armed" : "")"
+                                    style="background-color:#@color.Hex"
+                                    title="@color.Name"
+                                    aria-pressed="@(_armedColor == color.Hex)"
+                                    @onclick="() => ToggleArmedColor(color.Hex)">
+                            </button>
+                        }
+                    </div>
+                    @if (_highlightError is not null)
+                    {
+                        <span class="highlight-toolbar-error">@_highlightError</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="highlight-toolbar">
+                    <span class="highlight-toolbar-label">Sign in to highlight verses.</span>
+                </div>
+            }
+        }
+
         <div class="verse-content">
-            @((MarkupString)Passage.Content)
+            @if (_segments.Count > 0)
+            {
+                @foreach (var segment in _segments)
+                {
+                    var highlighted = _highlightsByVerse.TryGetValue(segment.Number, out var highlight);
+                    <span class="verse-segment @(highlighted ? "verse-segment--highlighted" : "") @(_armedColor is not null && !highlighted ? "verse-segment--armable" : "")"
+                          style="@(highlighted ? $"background-color:#{highlight!.Color}88" : "")"
+                          title="@(highlighted ? "Double-click to remove highlight" : "")"
+                          @onclick="() => OnVerseClickAsync(segment.Number)"
+                          @ondblclick="() => OnVerseDblClickAsync(segment.Number)">
+                        <sup class="verse-num">@segment.Number</sup>@((MarkupString)segment.Html)
+                        @if (_savingVerse == segment.Number)
+                        {
+                            <span class="verse-segment-saving" aria-hidden="true">⏳</span>
+                        }
+                    </span>
+                }
+            }
+            else
+            {
+                @((MarkupString)Passage.Content)
+            }
         </div>
 
         @if (!string.IsNullOrWhiteSpace(Copyright))

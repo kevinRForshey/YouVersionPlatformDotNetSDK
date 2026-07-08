@@ -149,6 +149,59 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
         _logger.LogInformation("User signed out; token cleared from provider.");
     }
 
+    /// <inheritdoc />
+    public async Task<DataExchangeToken> RequestPermissionsAsync(
+        IEnumerable<string> permissions,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(permissions);
+        var permissionList = permissions as IReadOnlyList<string> ?? new List<string>(permissions);
+        if (permissionList.Count == 0)
+            throw new ArgumentException("At least one permission must be requested.", nameof(permissions));
+
+        var token = await _tokenProvider.GetTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (token is null)
+            throw new InvalidOperationException(
+                "No access token is stored. The user must sign in before requesting additional permissions.");
+
+        _logger.LogDebug("Requesting data exchange token for permissions: {Permissions}.", string.Join(", ", permissionList));
+
+        var url = $"{_options.DataExchangeEndpoint}/token";
+        using var content = JsonContent.Create(new DataExchangeRequest { RequestedPermissions = permissionList });
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogError(
+                "Data exchange token request failed with HTTP {StatusCode} {ReasonPhrase}. Response body: {Body}",
+                (int)response.StatusCode, response.ReasonPhrase, body);
+            throw new YouVersionApiException(
+                response.StatusCode,
+                $"Data exchange token request failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).",
+                body);
+        }
+
+        var result = await response.Content
+            .ReadFromJsonAsync<DataExchangeToken>(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return result ?? throw new YouVersionEmptyResponseException(
+            "Data exchange token endpoint returned an empty response body.");
+    }
+
+    /// <inheritdoc />
+    public Uri BuildDataExchangeApprovalUrl(string dataExchangeToken)
+    {
+        if (string.IsNullOrWhiteSpace(dataExchangeToken))
+            throw new ArgumentException("Data exchange token is required.", nameof(dataExchangeToken));
+
+        return new Uri($"{_options.DataExchangeEndpoint}?token={Uri.EscapeDataString(dataExchangeToken)}");
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

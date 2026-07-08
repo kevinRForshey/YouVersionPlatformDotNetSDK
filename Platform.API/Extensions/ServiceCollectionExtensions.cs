@@ -125,7 +125,7 @@ public static class ServiceCollectionExtensions
     /// builder.Services.AddYouVersionApiClients(o => o.AppKey = "my-key")
     ///                 .AddYouVersionOAuth(o =>
     ///                 {
-    ///                     o.Scopes = "highlights";
+    ///                     o.Scopes = "openid profile email";
     ///                 });
     /// </code>
     /// </example>

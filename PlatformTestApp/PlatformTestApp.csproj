@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="YouVersion.Platform.SDK.Components" Version="1.0.0" />
+    <ProjectReference Include="..\Platform.SDK.Components\Platform.SDK.Components.csproj" />
   </ItemGroup>
 
 </Project>

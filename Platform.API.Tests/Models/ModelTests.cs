@@ -184,30 +184,23 @@ public sealed class HighlightTests
     public void Highlight_DeserializesFromJson_Correctly()
     {
         const string json = """
-            {
-              "id": "hl-1", "usfm": "JHN.3.16", "version_id": 3034,
-              "color": "Yellow",
-              "created_at": "2024-06-01T12:00:00Z",
-              "updated_at": "2024-06-01T13:00:00Z"
-            }
+            { "bible_id": 3034, "passage_id": "JHN.3.16", "color": "44aa44" }
             """;
 
         var highlight = JsonSerializer.Deserialize<Highlight>(json)!;
 
-        highlight.Id.Should().Be("hl-1");
-        highlight.Usfm.Should().Be("JHN.3.16");
-        highlight.VersionId.Should().Be(3034);
-        highlight.Color.Should().Be(HighlightColor.Yellow);
-        highlight.CreatedAt.Should().BeAfter(System.DateTimeOffset.MinValue);
+        highlight.BibleId.Should().Be(3034);
+        highlight.PassageId.Should().Be("JHN.3.16");
+        highlight.Color.Should().Be("44aa44");
     }
 
     [Fact]
     public void Highlight_DefaultValues_AreEmpty()
     {
         var h = new Highlight();
-        h.Id.Should().BeEmpty();
-        h.Usfm.Should().BeEmpty();
-        h.VersionId.Should().Be(0);
+        h.PassageId.Should().BeEmpty();
+        h.BibleId.Should().Be(0);
+        h.Color.Should().BeEmpty();
     }
 }
 

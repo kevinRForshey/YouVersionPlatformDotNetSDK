@@ -145,7 +145,7 @@ public sealed class ServiceCollectionExtensionsTests
         // Intercept the same named pipeline AddYouVersionOAuth appended the bearer handler to,
         // via the shared constant rather than re-deriving the client name independently.
         var capturingHandler = new CapturingHandler(
-            responseBody: """{"data":[],"next_page_token":null}""");
+            responseBody: """{"data":[]}""");
         services.AddHttpClient(ServiceCollectionExtensions.HighlightClientName)
             .ConfigurePrimaryHttpMessageHandler(() => capturingHandler);
 
@@ -160,7 +160,7 @@ public sealed class ServiceCollectionExtensionsTests
         });
 
         var highlightClient = sp.GetRequiredService<IHighlightClient>();
-        await highlightClient.GetHighlightsAsync();
+        await highlightClient.GetHighlightsAsync(3034, Reference.FromString("JHN.3.16"));
 
         capturingHandler.LastRequest!.Headers.Authorization.Should().NotBeNull();
         capturingHandler.LastRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");

@@ -82,6 +82,16 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
         return;
     }
 
+    // Final leg of the Data Exchange consent flow (triggered from /auth/callback-complete after
+    // sign-in). YouVersion redirects here with the outcome instead of returning a token — the
+    // access token obtained during sign-in is what becomes authorized for the granted permission.
+    if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("data_exchange_status"))
+    {
+        var granted = ctx.Request.Query["data_exchange_status"].ToString() == "granted";
+        ctx.Response.Redirect($"/?auth_mode=code&highlights={(granted ? "granted" : "denied")}");
+        return;
+    }
+
     // Dev-only convenience: lets the UI be exercised without a live OAuth round trip.
     // Builds an unsigned token from raw query params, so it must never be reachable
     // outside Development — anyone could pass ?user_name=admin and appear signed in.
@@ -148,6 +158,11 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
     var verifier = ctx.Session.GetString("pkce_verifier");
     var expected = ctx.Session.GetString("oauth_state");
 
+    ctx.Session.Remove("oauth_code");
+    ctx.Session.Remove("oauth_state_return");
+    ctx.Session.Remove("pkce_verifier");
+    ctx.Session.Remove("oauth_state");
+
     string? exchangeError = null;
 
     if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(verifier))
@@ -172,14 +187,24 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
         }
     }
 
-    ctx.Session.Remove("oauth_code");
-    ctx.Session.Remove("oauth_state_return");
-    ctx.Session.Remove("pkce_verifier");
-    ctx.Session.Remove("oauth_state");
+    if (exchangeError is not null)
+        return Results.Redirect($"/?oauth_error={Uri.EscapeDataString(exchangeError)}&auth_mode=code");
 
-    return exchangeError is not null
-        ? Results.Redirect($"/?oauth_error={Uri.EscapeDataString(exchangeError)}&auth_mode=code")
-        : Results.Redirect("/?auth_mode=code");
+    // Sign-in succeeded. Basic sign-in only grants identity — chain into the Data Exchange
+    // consent flow to additionally request highlights access. If this step fails, sign-in still
+    // succeeds; the user simply won't have highlights access yet.
+    try
+    {
+        var dataExchangeToken = await oauthClient.RequestPermissionsAsync(["highlights"]);
+        var approvalUrl = oauthClient.BuildDataExchangeApprovalUrl(dataExchangeToken.Token);
+        return Results.Redirect(approvalUrl.ToString());
+    }
+    catch (Exception ex)
+    {
+        ctx.RequestServices.GetRequiredService<ILogger<Program>>()
+            .LogError(ex, "Data exchange permission request failed.");
+        return Results.Redirect("/?auth_mode=code");
+    }
 });
 
 app.Run();

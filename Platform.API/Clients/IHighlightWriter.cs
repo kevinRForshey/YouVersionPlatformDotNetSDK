@@ -8,34 +8,35 @@ namespace Platform.API.Clients;
 /// Write surface of the highlights API. Requires OAuth bearer-token authentication.
 /// </summary>
 /// <remarks>
-/// Consumers that only need to create or delete highlights should depend on this interface.
+/// Consumers that only need to create or clear highlights should depend on this interface.
 /// Register <see cref="IHighlightClient"/> in the DI container; it implements both
 /// <see cref="IHighlightReader"/> and <see cref="IHighlightWriter"/>.
 /// </remarks>
 public interface IHighlightWriter
 {
     /// <summary>
-    /// Creates a new highlight for a Bible verse using a typed USFM reference.
+    /// Creates a highlight for a passage, or updates its color if one already exists.
     /// Requires OAuth bearer-token authentication.
     /// </summary>
-    /// <param name="versionId">The numeric Bible version id.</param>
-    /// <param name="usfm">
-    /// The USFM verse reference (e.g. <c>JHN.3.16</c>).
-    /// Must be a valid, single-verse USFM reference parsed as a <see cref="Reference"/>.
+    /// <param name="bibleId">The numeric Bible version id.</param>
+    /// <param name="passage">
+    /// The USFM passage reference to highlight (e.g. <c>JHN.3.16</c>).
+    /// Must be a valid <see cref="Reference"/>.
     /// </param>
-    /// <param name="color">The highlight color to apply.</param>
+    /// <param name="color">The highlight color as a hex string (e.g. <c>44aa44</c>), without a leading <c>#</c>.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>The newly created <see cref="Highlight"/>.</returns>
-    Task<Highlight> CreateHighlightAsync(
-        int versionId,
-        Reference usfm,
-        HighlightColor color,
+    /// <returns>The created or updated <see cref="Highlight"/>.</returns>
+    Task<Highlight> CreateOrUpdateHighlightAsync(
+        int bibleId,
+        Reference passage,
+        string color,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes an existing highlight by its id.
+    /// Clears any highlight(s) for a passage.
     /// </summary>
-    /// <param name="highlightId">The unique identifier of the highlight to delete.</param>
+    /// <param name="bibleId">The numeric Bible version id.</param>
+    /// <param name="passage">The USFM passage to clear highlights from.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    Task DeleteHighlightAsync(string highlightId, CancellationToken cancellationToken = default);
+    Task ClearHighlightsAsync(int bibleId, Reference passage, CancellationToken cancellationToken = default);
 }

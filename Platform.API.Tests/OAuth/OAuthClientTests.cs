@@ -282,6 +282,101 @@ public sealed class OAuthClientTests
     }
 
     // -------------------------------------------------------------------------
+    // RequestPermissionsAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ReturnsDataExchangeToken_WhenApiSucceeds()
+    {
+        const string responseJson = """{ "token": "dx-tok", "token_type": "data_exchange", "expires_in": 300 }""";
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClient(HttpStatusCode.Created, responseJson, tokenProvider);
+
+        var result = await client.RequestPermissionsAsync(["highlights"]);
+
+        result.Token.Should().Be("dx-tok");
+        result.TokenType.Should().Be("data_exchange");
+        result.ExpiresIn.Should().Be(300);
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_SendsStoredAccessTokenAsBearerAndPermissionsInBody()
+    {
+        const string responseJson = """{ "token": "dx-tok", "token_type": "data_exchange", "expires_in": 300 }""";
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, responseJson);
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClientFromHandler(handler, tokenProvider);
+
+        await client.RequestPermissionsAsync(["highlights"]);
+
+        handler.LastRequest!.Method.Should().Be(HttpMethod.Post);
+        handler.LastRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
+        handler.LastRequest.Headers.Authorization!.Parameter.Should().Be("acc-tok");
+        handler.LastRequestBody.Should().Contain("\"requested_permissions\"").And.Contain("highlights");
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ThrowsInvalidOperationException_WhenNoTokenStored()
+    {
+        const string responseJson = """{ "token": "dx-tok", "token_type": "data_exchange", "expires_in": 300 }""";
+        var client = BuildClient(HttpStatusCode.Created, responseJson, new FakeTokenProvider(initial: null));
+
+        var act = () => client.RequestPermissionsAsync(["highlights"]);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*sign in*");
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ThrowsArgumentException_WhenPermissionsIsEmpty()
+    {
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClient(HttpStatusCode.Created, "{}", tokenProvider);
+
+        var act = () => client.RequestPermissionsAsync([]);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ThrowsYouVersionApiException_OnError()
+    {
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""", tokenProvider);
+
+        var act = () => client.RequestPermissionsAsync(["highlights"]);
+
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
+    }
+
+    // -------------------------------------------------------------------------
+    // BuildDataExchangeApprovalUrl
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void BuildDataExchangeApprovalUrl_ReturnsUrlWithTokenQueryParameter()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var url = client.BuildDataExchangeApprovalUrl("dx-tok");
+
+        url.AbsoluteUri.Should().Be("https://api.youversion.com/data-exchange?token=dx-tok");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void BuildDataExchangeApprovalUrl_ThrowsArgumentException_WhenTokenIsInvalid(string token)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var act = () => client.BuildDataExchangeApprovalUrl(token);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    // -------------------------------------------------------------------------
     // OAuthTokenResponse.IsExpired
     // -------------------------------------------------------------------------
 
@@ -407,6 +502,33 @@ public sealed class OAuthClientTests
             tokenProvider ?? new FakeTokenProvider(),
             NullLogger<YouVersionOAuthClient>.Instance);
     }
+
+    private static YouVersionOAuthClient BuildClientFromHandler(
+        FakeHttpMessageHandler handler,
+        FakeTokenProvider? tokenProvider = null)
+    {
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
+        var options = Options.Create(new YouVersionOAuthOptions
+        {
+            ClientId = "test-client",
+            RedirectUri = new Uri("https://localhost/callback"),
+            AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
+            TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
+        });
+        return new YouVersionOAuthClient(
+            httpClient,
+            options,
+            tokenProvider ?? new FakeTokenProvider(),
+            NullLogger<YouVersionOAuthClient>.Instance);
+    }
+
+    private static OAuthTokenResponse MakeStoredToken() => new()
+    {
+        AccessToken = "acc-tok",
+        RefreshToken = "ref-tok",
+        ExpiresIn = 3600,
+        ReceivedAt = DateTimeOffset.UtcNow,
+    };
 
     private static string BuildUnsignedJwt(string claimName, string claimValue)
     {

@@ -23,8 +23,7 @@ All types are immutable record types with System.Text.Json property-name attribu
 | Passage | Scripture content returned by a passage fetch |
 | PassageRequestOptions | Options controlling format, headings, and footnotes |
 | PassageFormat | Text or Html enum |
-| Highlight | A user Bible verse highlight |
-| HighlightColor | Six-color enum for highlights |
+| Highlight | A user Bible verse highlight — identified by (BibleId, PassageId), Color is a hex string |
 | PagedResult(T) | Generic paged envelope with Data and NextPageToken |
 
 ## Target framework

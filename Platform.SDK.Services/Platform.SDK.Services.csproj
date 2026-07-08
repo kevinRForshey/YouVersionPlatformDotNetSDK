@@ -7,11 +7,11 @@
 
     <!-- NuGet package identity -->
     <PackageId>YouVersion.Platform.SDK.Services</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Kevin Forshey</Authors>
     <Company>MyndTek Ltd.</Company>
     <Product>YouVersion Platform SDK Services</Product>
-    <Description>Business-logic services (VersionService, PassageService, BookService, BibleReaderStateService) for the YouVersion Platform SDK.</Description>
+    <Description>Business-logic services (VersionService, PassageService, BookService, HighlightService, BibleReaderStateService) for the YouVersion Platform SDK.</Description>
     <PackageTags>youversion;bible;sdk;services</PackageTags>
     <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
     <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>

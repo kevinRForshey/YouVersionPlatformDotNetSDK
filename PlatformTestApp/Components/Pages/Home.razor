@@ -5,7 +5,11 @@
 <PageTitle>YouVersion Bible Reader</PageTitle>
 
 <div class="bible-reader-page">
-    <BibleReader OAuthError="@OAuthError" />
+    @if (HighlightsStatus == "denied")
+    {
+        <div class="alert alert-warning">Highlights access was not granted, so verse highlighting is unavailable.</div>
+    }
+    <BibleReader OAuthError="@OAuthError" EnableHighlighting="false" />
 </div>
 
 @code {
@@ -14,4 +18,7 @@
 
     [SupplyParameterFromQuery(Name = "auth_mode")]
     public string? AuthMode { get; set; }
+
+    [SupplyParameterFromQuery(Name = "highlights")]
+    public string? HighlightsStatus { get; set; }
 }

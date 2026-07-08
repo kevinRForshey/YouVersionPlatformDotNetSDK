@@ -40,6 +40,8 @@ jobs:
         run: |
           dotnet test Platform.API.Tests -c Release --verbosity normal
           dotnet test YouVersion.UsfmReferences.Tests -c Release --verbosity normal
+          dotnet test Platform.SDK.Services.Tests -c Release --verbosity normal
+          dotnet test Platform.SDK.Components.Tests -c Release --verbosity normal
 
       - name: Pack libraries to local feed
         run: |

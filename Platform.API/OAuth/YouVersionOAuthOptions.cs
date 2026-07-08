@@ -39,15 +39,21 @@ public sealed class YouVersionOAuthOptions
         new("https://api.youversion.com/auth/token");
 
     /// <summary>
-    /// Space-separated OAuth scopes to request.
-    /// <list type="bullet">
-    ///   <item><description><c>passages</c> — read Bible text on behalf of the user.</description></item>
-    ///   <item><description><c>highlights</c> — read and write the user's verse highlights.</description></item>
-    /// </list>
-    /// Bible version discovery and public passage reads use the app key only and do not
-    /// require an OAuth token or scope.
+    /// The base Data Exchange endpoint URL, used to request additional per-resource permissions
+    /// (e.g. <c>highlights</c>) beyond basic sign-in. See
+    /// <see cref="IYouVersionOAuthClient.RequestPermissionsAsync"/>.
     /// </summary>
-    public string Scopes { get; set; } = "passages highlights";
+    public Uri DataExchangeEndpoint { get; set; } =
+        new("https://api.youversion.com/data-exchange");
+
+    /// <summary>
+    /// Space-separated OAuth scopes to request. The only scopes YouVersion's sign-in API
+    /// supports are <c>openid</c>, <c>profile</c>, and <c>email</c> — there is no separate
+    /// scope for passages or highlights. Sign-in alone only grants identity; resource
+    /// permissions like <c>highlights</c> require the separate Data Exchange consent flow
+    /// (see <see cref="IYouVersionOAuthClient.RequestPermissionsAsync"/>).
+    /// </summary>
+    public string Scopes { get; set; } = "openid profile email";
 
     /// <summary>
     /// How many seconds before a token's actual expiry to proactively refresh it inside

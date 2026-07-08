@@ -296,43 +296,6 @@
     margin-right: 0.4rem;
 }
 
-/* ── Passage rendering ──────────────────────────────────────────────────── */
-
-.cr-passage-content {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    font-size: 1.05rem;
-    line-height: 1.9;
-    color: #e6edf3;
-}
-
-::deep .cr-passage-content p,
-::deep .cr-passage-content .p {
-    margin: 0 0 0.5em;
-}
-
-/* Verse numbers */
-::deep .cr-passage-content .v {
-    color: #f59e0b;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.68em;
-    vertical-align: super;
-    margin-right: 0.15em;
-    user-select: none;
-    font-weight: 700;
-}
-
-/* Words of Jesus */
-::deep .cr-passage-content .wj {
-    color: #fca5a5;
-}
-
-/* Added text / nomina divina */
-::deep .cr-passage-content .add,
-::deep .cr-passage-content .nd {
-    font-style: italic;
-    color: #8b949e;
-}
-
 /* ── SDK component dark overrides via ::deep ────────────────────────────── */
 
 ::deep .bible-picker {

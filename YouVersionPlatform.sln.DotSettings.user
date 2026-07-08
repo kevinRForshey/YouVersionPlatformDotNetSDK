@@ -3,5 +3,5 @@
   &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=ff0392f6_002D75b8_002D412e_002Daf67_002D56e1437b6712/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;Platform.API.Tests&amp;gt; #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Project Location="/home/kevinf/DevProjects/YouVersion/SimpleYouVersionPlatformDotNetSDK/Platform.API.Tests" Presentation="&amp;lt;Platform.API.Tests&amp;gt;" /&gt;
+  &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

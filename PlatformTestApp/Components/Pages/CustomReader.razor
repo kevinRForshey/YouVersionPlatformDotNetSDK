@@ -1,5 +1,6 @@
 @page "/custom-reader"
 @using Platform.SDK.Components.BibleComponents
+@using Platform.SDK.Components.BibleComponents.Verses
 @using Platform.SDK.Services
 @using Platform.API.Models
 @inject IBibleReaderStateService State
@@ -145,7 +146,10 @@
             }
             else if (_passage is not null)
             {
-                <div class="cr-passage-content">@((MarkupString)_passage.Content)</div>
+                <VerseComponent Passage="@(_passage!)"
+                            Copyright="@State.SelectedVersion?.Copyright"
+                            VersionId="@(State.SelectedVersion?.Id ?? 0)"
+                            EnableHighlighting="false" />
             }
             else if (CanRead)
             {
