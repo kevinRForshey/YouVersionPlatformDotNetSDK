@@ -2,7 +2,7 @@
 
 Business-logic services for the [YouVersion Platform SDK](https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK).
 
-Provides `VersionService`, `PassageService`, `BookService`, and `BibleReaderStateService` — the stateful layer between the raw HTTP client (`YouVersion.Platform.API`) and the Blazor component library (`YouVersion.Platform.SDK.Components`).
+Provides `VersionService`, `PassageService`, `BookService`, `ChapterService`, and `BibleReaderStateService` — the stateful layer between the raw HTTP client (`YouVersion.Platform.API`) and the Blazor component library (`YouVersion.Platform.SDK.Components`).
 
 ## Installation
 
@@ -26,6 +26,13 @@ Passage passage = await passageService.GetPassageAsync(
 // Verse range
 Passage range = await passageService.GetPassageAsync(
     versionId: 3034, bookUsfm: "JHN", chapter: 3, verseStart: 16, verseEnd: 17);
+```
+
+## Fetching chapters for a book
+
+```csharp
+IReadOnlyList<Chapter> chapters = await chapterService.GetChaptersAsync(
+    versionId: 3034, bookUsfm: "GEN");
 ```
 
 ## License

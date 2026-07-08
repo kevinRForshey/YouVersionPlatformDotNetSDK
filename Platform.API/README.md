@@ -155,16 +155,30 @@ If you see local throttling, increase burst and/or queue gradually. If upstream 
 
 ## Token storage
 
-Default OAuth token storage is in-memory and process-local. For production apps, register a custom `ITokenProvider` before `AddYouVersionOAuth(...)`.
+Default OAuth token storage (`InMemoryTokenProvider`) is a **process-wide singleton** — fine for
+single-user tools and local testing, but in a multi-user host (e.g. Blazor Server) it leaks one
+user's token to every other user on the same process. For any app with more than one concurrent
+user, register a custom, per-user-scoped `ITokenProvider` before `AddYouVersionOAuth(...)`:
 
 ```csharp
-builder.Services.AddSingleton<ITokenProvider, MyPersistentTokenProvider>();
+builder.Services.AddScoped<ITokenProvider, MyPerUserTokenProvider>();
 ```
+
+For a working example that scopes tokens per browser session using `IDistributedCache`, see
+`PlatformTestApp/Auth/SessionTokenProvider.cs` and `CircuitSessionKeyAccessor.cs` in this
+solution's test app — it keys stored tokens off a session id that survives the handoff from
+Blazor Server prerender into the live interactive circuit.
+
+## Exceptions
+
+- `YouVersionApiException` — the API returned a non-success HTTP response. Carries `StatusCode` and the raw `ResponseBody`.
+- `YouVersionEmptyResponseException` (derives from `YouVersionApiException`) — the HTTP call itself succeeded (`200 OK`), but the body was null, empty, or failed to deserialize into the expected type. Check for this type first (or catch it separately) rather than branching on `StatusCode`, since it doesn't carry a real wire-level error status.
 
 ## Troubleshooting
 
 - `InvalidOperationException` mentioning `AddYouVersionApiClients`: call order is wrong; register API clients first.
 - `YouVersionApiException` with `401`/`403`: check app key and (for write ops) OAuth token state.
+- `YouVersionEmptyResponseException`: the request succeeded but returned no usable body — usually a transient upstream issue; safe to retry.
 - Local outbound throttling errors: tune `OutboundRequestsPerSecond`, `OutboundBurstSize`, and `OutboundQueueLimit`.
 
 ## Additional docs
