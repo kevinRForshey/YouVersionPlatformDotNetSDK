@@ -52,6 +52,34 @@ Example `appsettings.json`:
 }
 ```
 
+## Configuration & secrets
+
+`AppKey`, `ClientId`, and any OAuth secret are read through standard `IConfiguration`/`IOptions<T>`
+binding — the SDK doesn't care which provider they come from. The `appsettings.json` example above
+is fine for shape/structure, but don't put real keys directly in a file that ships with your app or
+gets committed to source control:
+
+- **Local development**: use [.NET User Secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets)
+  instead of a real key in `appsettings.Development.json`:
+
+  ```bash
+  dotnet user-secrets init
+  dotnet user-secrets set "YouVersionApi:AppKey" "YOUR_APP_KEY"
+  dotnet user-secrets set "YouVersionOAuth:ClientId" "YOUR_CLIENT_ID"
+  ```
+
+  User Secrets are stored outside the project directory (keyed to a per-project id in
+  `.csproj`), so they can't be accidentally committed even without a `.gitignore` entry.
+
+- **Production**: supply values via environment variables (ASP.NET Core maps `__` to `:`, so
+  `YouVersionApi:AppKey` becomes `YouVersionApi__AppKey`) or a secret manager — Azure Key Vault,
+  AWS Secrets Manager, etc. — registered as an additional `IConfiguration` source. Never check a
+  live key into any `appsettings*.json` file.
+
+Since each consuming application supplies its own key/client id through its own configuration
+sources, no code in this SDK needs to change between environments — only where `builder.Configuration`
+is told to look.
+
 ## OAuth setup (optional)
 
 Use this only when you need user-scoped operations (for example, highlight writes). YouVersion's
