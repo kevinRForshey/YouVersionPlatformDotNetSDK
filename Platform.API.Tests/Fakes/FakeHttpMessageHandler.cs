@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -13,12 +14,13 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
 {
     private readonly HttpResponseMessage _response;
 
-    public FakeHttpMessageHandler(HttpStatusCode statusCode, string jsonBody)
+    public FakeHttpMessageHandler(HttpStatusCode statusCode, string jsonBody, Action<HttpResponseMessage>? configureResponse = null)
     {
         _response = new HttpResponseMessage(statusCode)
         {
             Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
         };
+        configureResponse?.Invoke(_response);
     }
 
     /// <summary>The last request received by this handler.</summary>

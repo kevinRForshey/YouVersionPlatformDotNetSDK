@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -153,8 +155,12 @@ public static class ServiceCollectionExtensions
         // OAuth HTTP client — no app key or bearer required on auth endpoints.
         // BaseAddress is intentionally not set; PostTokenRequestAsync uses the absolute
         // TokenEndpoint URI from YouVersionOAuthOptions directly.
+        // AllowAutoRedirect is disabled because CompleteDataExchangeApprovalAsync needs to read
+        // the `Location` header off a raw 303 response instead of having HttpClient silently
+        // follow it to the caller's own callback URL.
         services
             .AddHttpClient<IYouVersionOAuthClient, YouVersionOAuthClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .AddHttpMessageHandler<OutboundRateLimitingHandler>()
             .AddStandardResilienceHandler();
 

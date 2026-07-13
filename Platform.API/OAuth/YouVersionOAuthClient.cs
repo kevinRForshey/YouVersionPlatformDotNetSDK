@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -8,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Platform.API.Configuration;
 using Platform.API.Exceptions;
 
 namespace Platform.API.OAuth;
@@ -19,23 +22,26 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
 {
     private readonly HttpClient _httpClient;
     private readonly YouVersionOAuthOptions _options;
+    private readonly YouVersionApiOptions _apiOptions;
     private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<YouVersionOAuthClient> _logger;
 
     public YouVersionOAuthClient(
         HttpClient httpClient,
         IOptions<YouVersionOAuthOptions> options,
+        IOptions<YouVersionApiOptions> apiOptions,
         ITokenProvider tokenProvider,
         ILogger<YouVersionOAuthClient> logger)
     {
         _httpClient = httpClient;
         _options = options.Value;
+        _apiOptions = apiOptions.Value;
         _tokenProvider = tokenProvider;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public AuthorizationRequest BuildAuthorizationUrl(string? state = null)
+    public AuthorizationRequest BuildAuthorizationUrl(string? state = null, IEnumerable<string>? requestedPermissions = null)
     {
         if (state is not null && string.IsNullOrWhiteSpace(state))
             throw new ArgumentException("State cannot be empty or whitespace when provided.", nameof(state));
@@ -62,6 +68,22 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
         query.Append("&code_challenge="); query.Append(Uri.EscapeDataString(pkce.CodeChallenge));
         query.Append("&code_challenge_method=S256");
         query.Append("&scope="); query.Append(Uri.EscapeDataString(scopes));
+
+        // Requesting permissions here (rather than via the separate RequestPermissionsAsync +
+        // BuildDataExchangeApprovalUrl round trip) shows the consent UI as part of this same
+        // sign-in redirect. In practice the grant result has been observed arriving both ways:
+        // as `granted_permissions` alongside `code`/`state` on this same callback, and as a
+        // separate follow-up callback carrying `data_exchange_status` (the same shape
+        // ParseDataExchangeCallback handles). Callers should be prepared for either.
+        if (requestedPermissions is not null)
+        {
+            foreach (var permission in requestedPermissions)
+            {
+                if (string.IsNullOrWhiteSpace(permission))
+                    continue;
+                query.Append("&requested_permissions="); query.Append(Uri.EscapeDataString(permission));
+            }
+        }
 
         var url = new Uri(_options.AuthorizationEndpoint + query.ToString());
 
@@ -116,6 +138,67 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
     }
 
     /// <inheritdoc />
+    public async Task<OAuthTokenResponse> CompleteIdentityCallbackAsync(
+        string state,
+        string yvpId,
+        string? userName,
+        string? userEmail,
+        string? profilePicture,
+        string codeVerifier,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(state))
+            throw new ArgumentException("State is required.", nameof(state));
+        if (string.IsNullOrWhiteSpace(yvpId))
+            throw new ArgumentException("yvp_id is required.", nameof(yvpId));
+        if (string.IsNullOrWhiteSpace(codeVerifier))
+            throw new ArgumentException("PKCE code verifier is required.", nameof(codeVerifier));
+
+        _logger.LogDebug("Exchanging identity callback for an authorization code.");
+
+        var query = new StringBuilder();
+        query.Append("?state=").Append(Uri.EscapeDataString(state));
+        query.Append("&yvp_id=").Append(Uri.EscapeDataString(yvpId));
+        if (!string.IsNullOrWhiteSpace(userName))
+            query.Append("&user_name=").Append(Uri.EscapeDataString(userName));
+        if (!string.IsNullOrWhiteSpace(userEmail))
+            query.Append("&user_email=").Append(Uri.EscapeDataString(userEmail));
+        if (!string.IsNullOrWhiteSpace(profilePicture))
+            query.Append("&profile_picture=").Append(Uri.EscapeDataString(profilePicture));
+
+        var url = _options.AuthCallbackEndpoint + query.ToString();
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        // No status-code check beyond "did we get a Location to follow" — YouVersion's docs say
+        // this hop is a redirect (a 302 in practice), but the exact status isn't load-bearing here;
+        // what matters is whether a `code` shows up in the Location's query string.
+        if (response.Headers.Location is null)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogError(
+                "Identity callback exchange failed with HTTP {StatusCode} {ReasonPhrase} and no Location header. Response body: {Body}",
+                (int)response.StatusCode, response.ReasonPhrase, body);
+            throw new YouVersionApiException(
+                response.StatusCode,
+                $"Identity callback exchange failed with status {(int)response.StatusCode} ({response.ReasonPhrase}) and no redirect to follow.",
+                body);
+        }
+
+        var location = response.Headers.Location.IsAbsoluteUri
+            ? response.Headers.Location
+            : new Uri(response.RequestMessage!.RequestUri!, response.Headers.Location);
+
+        var code = FirstOrDefault(ParseQueryString(location.Query), "code");
+        if (string.IsNullOrWhiteSpace(code))
+            throw new YouVersionEmptyResponseException(
+                "The auth callback endpoint's redirect did not include an authorization code.");
+
+        _logger.LogDebug("Identity callback exchange succeeded; redeeming the authorization code.");
+        return await ExchangeCodeAsync(code, codeVerifier, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public async Task<OAuthTokenResponse> RefreshTokenAsync(CancellationToken cancellationToken = default)
     {
         var existing = await _tokenProvider.GetTokenAsync(cancellationToken).ConfigureAwait(false);
@@ -166,7 +249,8 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
 
         _logger.LogDebug("Requesting data exchange token for permissions: {Permissions}.", string.Join(", ", permissionList));
 
-        var url = $"{_options.DataExchangeEndpoint}/token";
+        var appKey = RequireAppKey();
+        var url = $"{_options.DataExchangeEndpoint}/token?x-yvp-app-key={Uri.EscapeDataString(appKey)}";
         using var content = JsonContent.Create(new DataExchangeRequest { RequestedPermissions = permissionList });
         using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.AccessToken);
@@ -199,12 +283,168 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
         if (string.IsNullOrWhiteSpace(dataExchangeToken))
             throw new ArgumentException("Data exchange token is required.", nameof(dataExchangeToken));
 
-        return new Uri($"{_options.DataExchangeEndpoint}?token={Uri.EscapeDataString(dataExchangeToken)}");
+        var appKey = RequireAppKey();
+
+        return new Uri(
+            $"{_options.DataExchangeEndpoint}?token={Uri.EscapeDataString(dataExchangeToken)}" +
+            $"&x-yvp-app-key={Uri.EscapeDataString(appKey)}");
+    }
+
+    /// <inheritdoc />
+    public Uri BuildDirectDataExchangeUrl(IEnumerable<string> permissions, string? state = null)
+    {
+        ArgumentNullException.ThrowIfNull(permissions);
+        var permissionList = permissions as IReadOnlyList<string> ?? new List<string>(permissions);
+        if (permissionList.Count == 0)
+            throw new ArgumentException("At least one permission must be requested.", nameof(permissions));
+
+        var appKey = RequireAppKey();
+        var query = new StringBuilder();
+        query.Append("?x-yvp-app-key=").Append(Uri.EscapeDataString(appKey));
+
+        foreach (var permission in permissionList)
+        {
+            if (string.IsNullOrWhiteSpace(permission))
+                continue;
+            query.Append("&requested_permissions=").Append(Uri.EscapeDataString(permission));
+        }
+
+        if (!string.IsNullOrWhiteSpace(state))
+            query.Append("&state=").Append(Uri.EscapeDataString(state));
+
+        _logger.LogDebug("Building direct data exchange URL.");
+        return new Uri(_options.DataExchangeEndpoint + query.ToString());
+    }
+
+    /// <inheritdoc />
+    public DataExchangeCallbackResult ParseDataExchangeCallback(Uri callbackUrl)
+    {
+        ArgumentNullException.ThrowIfNull(callbackUrl);
+        return ParseCallbackQuery(callbackUrl.Query);
+    }
+
+    /// <inheritdoc />
+    public async Task<DataExchangeCallbackResult> CompleteDataExchangeApprovalAsync(
+        string dataExchangeToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dataExchangeToken))
+            throw new ArgumentException("Data exchange token is required.", nameof(dataExchangeToken));
+
+        var appKey = RequireAppKey();
+
+        _logger.LogDebug("Completing data exchange approval for token.");
+
+        // POST /data-exchange takes no request body — the permissions being granted were already
+        // fixed when the token was created via RequestPermissionsAsync (POST /data-exchange/token).
+        // The `token` query parameter alone is what the API needs to finalize the grant; sending an
+        // `Authorization` bearer header here is a *separate*, mutually-exclusive path the API
+        // reserves for clients that skip token creation entirely, which this SDK doesn't do.
+        var url = $"{_options.DataExchangeEndpoint}?token={Uri.EscapeDataString(dataExchangeToken)}" +
+            $"&x-yvp-app-key={Uri.EscapeDataString(appKey)}";
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.StatusCode != HttpStatusCode.SeeOther || response.Headers.Location is null)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogError(
+                "Data exchange completion failed with HTTP {StatusCode} {ReasonPhrase}. Response body: {Body}",
+                (int)response.StatusCode, response.ReasonPhrase, body);
+            throw new YouVersionApiException(
+                response.StatusCode,
+                $"Data exchange completion failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).",
+                body);
+        }
+
+        var location = response.Headers.Location.IsAbsoluteUri
+            ? response.Headers.Location
+            : new Uri(response.RequestMessage!.RequestUri!, response.Headers.Location);
+
+        var result = ParseDataExchangeCallback(location);
+        _logger.LogInformation("Data exchange approval completed with status {Status}.", result.Status);
+        return result;
     }
 
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private string RequireAppKey()
+    {
+        if (string.IsNullOrWhiteSpace(_apiOptions.AppKey))
+            throw new InvalidOperationException(
+                $"{nameof(YouVersionApiOptions)}.{nameof(YouVersionApiOptions.AppKey)} is not configured. " +
+                "The Data Exchange approval page is a direct browser redirect and cannot rely on the " +
+                "X-YVP-App-Key header, so the app key must be configured to include it as a query parameter.");
+
+        return _apiOptions.AppKey;
+    }
+
+    private static DataExchangeCallbackResult ParseCallbackQuery(string query)
+    {
+        var parameters = ParseQueryString(query);
+
+        var status = parameters.TryGetValue("data_exchange_status", out var statusValues) && statusValues.Count > 0
+            ? statusValues[0] switch
+            {
+                "granted" => DataExchangeStatus.Granted,
+                "cancelled" => DataExchangeStatus.Cancelled,
+                "error" => DataExchangeStatus.Error,
+                _ => DataExchangeStatus.Unknown
+            }
+            : DataExchangeStatus.Unknown;
+
+        return new DataExchangeCallbackResult
+        {
+            Status = status,
+            GrantedPermissions = ExtractPermissions(parameters, "granted_permissions"),
+            DeniedPermissions = ExtractPermissions(parameters, "denied_permissions"),
+            Error = FirstOrDefault(parameters, "error"),
+            ErrorDescription = FirstOrDefault(parameters, "error_description"),
+        };
+    }
+
+    private static IReadOnlyList<string> ExtractPermissions(Dictionary<string, List<string>> parameters, string key)
+    {
+        if (!parameters.TryGetValue(key, out var values))
+            return [];
+
+        return values
+            .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToList();
+    }
+
+    private static string? FirstOrDefault(Dictionary<string, List<string>> parameters, string key)
+        => parameters.TryGetValue(key, out var values) ? values.FirstOrDefault() : null;
+
+    private static Dictionary<string, List<string>> ParseQueryString(string query)
+    {
+        var result = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var trimmed = query.TrimStart('?');
+        if (trimmed.Length == 0)
+            return result;
+
+        foreach (var pair in trimmed.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separatorIndex = pair.IndexOf('=');
+            var key = separatorIndex >= 0 ? pair[..separatorIndex] : pair;
+            var value = separatorIndex >= 0 ? pair[(separatorIndex + 1)..] : string.Empty;
+
+            key = Uri.UnescapeDataString(key.Replace("+", " "));
+            value = Uri.UnescapeDataString(value.Replace("+", " "));
+
+            if (!result.TryGetValue(key, out var list))
+            {
+                list = [];
+                result[key] = list;
+            }
+            list.Add(value);
+        }
+
+        return result;
+    }
 
     private async Task<OAuthTokenResponse> PostTokenRequestAsync(
         Dictionary<string, string> formData,

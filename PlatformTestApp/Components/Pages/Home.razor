@@ -1,6 +1,11 @@
 @page "/"
+@using Platform.API.OAuth
 @using Platform.SDK.Components.BibleComponents
+@using PlatformTestApp.Auth
 @rendermode InteractiveServer
+@inject HighlightsPermissionStore PermissionStore
+@inject ITokenProvider TokenProvider
+@inject NavigationManager Nav
 
 <PageTitle>YouVersion Bible Reader</PageTitle>
 
@@ -9,7 +14,14 @@
     {
         <div class="alert alert-warning">Highlights access was not granted, so verse highlighting is unavailable.</div>
     }
-    <BibleReader OAuthError="@OAuthError" EnableHighlighting="false" />
+    @if (_isSignedIn && !_highlightsEnabled)
+    {
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>Sign-in doesn't request highlights access by itself &mdash; grant it separately to enable verse highlighting.</span>
+            <button class="read-passage-button" @onclick="RequestHighlightsAsync">Grant highlights access</button>
+        </div>
+    }
+    <BibleReader OAuthError="@OAuthError" EnableHighlighting="@_highlightsEnabled" />
 </div>
 
 @code {
@@ -19,6 +31,52 @@
     [SupplyParameterFromQuery(Name = "auth_mode")]
     public string? AuthMode { get; set; }
 
+    // Only present on the single redirect immediately following an OAuth/Data Exchange callback.
+    // On every other page load this is null, so the persisted HighlightsPermissionStore is the
+    // source of truth for whether highlighting stays enabled across reloads and revisits.
     [SupplyParameterFromQuery(Name = "highlights")]
     public string? HighlightsStatus { get; set; }
+
+    private bool _highlightsEnabled;
+    private bool _isSignedIn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _highlightsEnabled = HighlightsStatus switch
+        {
+            "granted" => true,
+            "denied" => false,
+            _ => await PermissionStore.GetGrantedAsync()
+        };
+        _isSignedIn = await CheckSignedInAsync();
+    }
+
+    // Re-check after first interactive render — a permission grant or token persisted during the
+    // OAuth callback round-trip may not be visible in the SSR prerender scope OnInitializedAsync
+    // ran in (same caveat VerseComponent handles for its own sign-in check).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var signedIn = await CheckSignedInAsync();
+        var granted = HighlightsStatus is null ? await PermissionStore.GetGrantedAsync() : _highlightsEnabled;
+
+        if (signedIn == _isSignedIn && granted == _highlightsEnabled) return;
+
+        _isSignedIn = signedIn;
+        _highlightsEnabled = granted;
+        StateHasChanged();
+    }
+
+    private async Task<bool> CheckSignedInAsync()
+    {
+        var token = await TokenProvider.GetTokenAsync();
+        return token is not null && !token.IsExpired();
+    }
+
+    // A plain <a href> here gets swallowed by Blazor's enhanced navigation, which fetches the
+    // response and tries to diff it into the page instead of following the server redirect to
+    // YouVersion's off-site approval page. forceLoad: true bypasses that, same as YouVersionAuth's
+    // sign-in/out buttons.
+    private void RequestHighlightsAsync() => Nav.NavigateTo("/auth/request-highlights", forceLoad: true);
 }

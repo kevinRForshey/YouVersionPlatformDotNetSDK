@@ -7,7 +7,62 @@ below is pre-`v1.0.0`.
 
 ## [Unreleased]
 
+### Added
+- `IYouVersionOAuthClient.BuildAuthorizationUrl` now accepts an optional `requestedPermissions`
+  parameter, appended to `/auth/authorize` as repeated `requested_permissions=...` query
+  parameters. This shows the Data Exchange consent UI as part of the sign-in redirect itself,
+  rather than requiring a separate `RequestPermissionsAsync` + `BuildDataExchangeApprovalUrl`
+  round trip after sign-in completes; the result comes back as `granted_permissions` on the same
+  callback that carries `code`/`state`. This is the recommended way to request a resource
+  permission (e.g. `highlights`) at sign-in time — `RequestPermissionsAsync`/
+  `BuildDataExchangeApprovalUrl` remain for requesting a permission later, without a full
+  sign-in round trip.
+- `IYouVersionOAuthClient.ParseDataExchangeCallback` — parses the `data_exchange_status`,
+  `granted_permissions`, `denied_permissions`, `error`, and `error_description` query parameters
+  YouVersion appends to the app's callback URL after the Data Exchange approval page, returning a
+  typed `DataExchangeCallbackResult`/`DataExchangeStatus`.
+- `IYouVersionOAuthClient.CompleteDataExchangeApprovalAsync(dataExchangeToken)` — completes a Data
+  Exchange approval via `POST /data-exchange?token={token}` using a previously-issued
+  `RequestPermissionsAsync` token, for confidential clients that can skip the browser-rendered
+  approval page. Requires the OAuth `HttpClient` to have `AllowAutoRedirect` disabled so the `303`
+  response's `Location` header can be read directly.
+- Data Exchange documentation section in `Platform.API/README.md` covering the full
+  request-token → approval-page → callback flow.
+
 ### Fixed
+- The Data Exchange approval page never appeared during `PlatformTestApp`'s sign-in flow.
+  Compounding causes: (1) `PlatformTestApp` was missing `requested_permissions` on
+  `/auth/authorize` entirely, which is what actually triggers the consent UI during sign-in (see
+  the `Added` entry for `BuildAuthorizationUrl`'s new `requestedPermissions` parameter);
+  (2) `Results.Redirect` was called with `Uri.ToString()` instead of `Uri.AbsoluteUri` on the
+  authorization/approval URLs in `PlatformTestApp/Program.cs` — `.ToString()` un-escapes
+  percent-encoded characters for display (e.g. turning `scope=openid%20profile%20email` back into
+  a literal, RFC-invalid `scope=openid profile email` with raw spaces), silently corrupting the
+  outbound redirect. Note: in live testing, the completed consent grant has been observed coming
+  back both as `granted_permissions` on the same callback as `code` *and* as a separate
+  `data_exchange_status` callback (the same shape `ParseDataExchangeCallback`/
+  `BuildDataExchangeApprovalUrl` use) — `PlatformTestApp` handles both; don't remove either path
+  without confirming via a real completed sign-in that it's unreachable.
+- `BuildDataExchangeApprovalUrl` was missing the app key entirely. The Data Exchange approval
+  page is a top-level browser redirect and can't carry the `X-YVP-App-Key` header, so the app key
+  must be sent as an `x-yvp-app-key` query parameter instead — the URL would otherwise fail to
+  resolve the calling app. `YouVersionOAuthClient` now reads `YouVersionApiOptions.AppKey` for
+  this (and throws `InvalidOperationException` if it isn't configured).
+- `RequestPermissionsAsync` (`POST /data-exchange/token`) wasn't sending `x-yvp-app-key` either,
+  even though the API reference lists it as an accepted query parameter for resolving the calling
+  app on that endpoint; it's now included alongside the existing bearer token.
+- `CompleteDataExchangeApprovalAsync` sent a `requested_permissions` JSON body and an
+  `Authorization` bearer header to `POST /data-exchange` — neither matches the documented
+  contract. That endpoint takes **no request body**; the permissions granted are whatever was
+  fixed when the Data Exchange token was created via `RequestPermissionsAsync`. The method now
+  takes that token directly (`CompleteDataExchangeApprovalAsync(dataExchangeToken)`) and sends it
+  as the `token` query parameter, matching `POST /data-exchange?token={token}`. **Breaking change**
+  to the (unreleased) method signature.
+- `PlatformTestApp`'s `/auth/callback-complete` swallowed any failure from
+  `RequestPermissionsAsync`/`BuildDataExchangeApprovalUrl` and silently redirected to the same URL
+  as a successful sign-in (`/?auth_mode=code`), so a broken Data Exchange request looked identical
+  to the user never being asked for `highlights` at all. The error now reaches the `oauth_error`
+  query parameter the home page already renders.
 - Cross-user OAuth token leakage: `PlatformTestApp` now registers a scoped, session-backed
   `SessionTokenProvider` before calling `AddYouVersionOAuth`, instead of relying on the library's
   default singleton `InMemoryTokenProvider` (which is documented as console/test-only).

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Platform.API.Configuration;
 using Platform.API.Exceptions;
 using Platform.API.OAuth;
 using Platform.API.Tests.Fakes;
@@ -123,6 +124,37 @@ public sealed class OAuthClientTests
         var client = BuildClient(HttpStatusCode.OK, TokenJson);
         var act = () => client.BuildAuthorizationUrl(state);
         act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void BuildAuthorizationUrl_OmitsRequestedPermissions_WhenNotProvided()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var authRequest = client.BuildAuthorizationUrl();
+
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().NotContain("requested_permissions");
+    }
+
+    [Fact]
+    public void BuildAuthorizationUrl_AppendsRequestedPermissions_WhenProvided()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var authRequest = client.BuildAuthorizationUrl(requestedPermissions: ["highlights"]);
+
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().Contain("requested_permissions=highlights");
+    }
+
+    [Fact]
+    public void BuildAuthorizationUrl_AppendsEachRequestedPermission_AsRepeatedQueryParameter()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var authRequest = client.BuildAuthorizationUrl(requestedPermissions: ["highlights", "other"]);
+
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().Contain("requested_permissions=highlights");
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().Contain("requested_permissions=other");
     }
 
     // -------------------------------------------------------------------------
@@ -312,6 +344,7 @@ public sealed class OAuthClientTests
         handler.LastRequest!.Method.Should().Be(HttpMethod.Post);
         handler.LastRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
         handler.LastRequest.Headers.Authorization!.Parameter.Should().Be("acc-tok");
+        handler.LastRequest.RequestUri!.Query.Should().Contain("x-yvp-app-key=test-app-key");
         handler.LastRequestBody.Should().Contain("\"requested_permissions\"").And.Contain("highlights");
     }
 
@@ -355,13 +388,13 @@ public sealed class OAuthClientTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void BuildDataExchangeApprovalUrl_ReturnsUrlWithTokenQueryParameter()
+    public void BuildDataExchangeApprovalUrl_ReturnsUrlWithTokenAndAppKeyQueryParameters()
     {
         var client = BuildClient(HttpStatusCode.OK, TokenJson);
 
         var url = client.BuildDataExchangeApprovalUrl("dx-tok");
 
-        url.AbsoluteUri.Should().Be("https://api.youversion.com/data-exchange?token=dx-tok");
+        url.AbsoluteUri.Should().Be("https://api.youversion.com/data-exchange?token=dx-tok&x-yvp-app-key=test-app-key");
     }
 
     [Theory]
@@ -374,6 +407,144 @@ public sealed class OAuthClientTests
         var act = () => client.BuildDataExchangeApprovalUrl(token);
 
         act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void BuildDataExchangeApprovalUrl_ThrowsInvalidOperationException_WhenAppKeyNotConfigured()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson, appKey: "");
+
+        var act = () => client.BuildDataExchangeApprovalUrl("dx-tok");
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*AppKey*");
+    }
+
+    // -------------------------------------------------------------------------
+    // ParseDataExchangeCallback
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsGranted_WithPermissions()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(
+            new Uri("https://myapp.com/?data_exchange_status=granted&granted_permissions=highlights"));
+
+        result.Status.Should().Be(DataExchangeStatus.Granted);
+        result.GrantedPermissions.Should().ContainSingle().Which.Should().Be("highlights");
+        result.DeniedPermissions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsCancelled_WithDeniedPermissionsAndError()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri(
+            "https://myapp.com/?data_exchange_status=cancelled&denied_permissions=highlights&error=access_denied"));
+
+        result.Status.Should().Be(DataExchangeStatus.Cancelled);
+        result.DeniedPermissions.Should().ContainSingle().Which.Should().Be("highlights");
+        result.Error.Should().Be("access_denied");
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsError_WithErrorDescription()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri(
+            "https://myapp.com/?data_exchange_status=error&error=server_error&error_description=Something%20went%20wrong"));
+
+        result.Status.Should().Be(DataExchangeStatus.Error);
+        result.Error.Should().Be("server_error");
+        result.ErrorDescription.Should().Be("Something went wrong");
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsUnknown_WhenStatusMissing()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri("https://myapp.com/"));
+
+        result.Status.Should().Be(DataExchangeStatus.Unknown);
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_SplitsCommaSeparatedPermissions()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri(
+            "https://myapp.com/?data_exchange_status=granted&granted_permissions=highlights,bookmarks"));
+
+        result.GrantedPermissions.Should().BeEquivalentTo(["highlights", "bookmarks"]);
+    }
+
+    // -------------------------------------------------------------------------
+    // CompleteDataExchangeApprovalAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ReturnsParsedResult_OnSeeOtherResponse()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.SeeOther, "", response =>
+            response.Headers.Location = new Uri("https://myapp.com/?data_exchange_status=granted&granted_permissions=highlights"));
+        var client = BuildClientFromHandler(handler);
+
+        var result = await client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        result.Status.Should().Be(DataExchangeStatus.Granted);
+        result.GrantedPermissions.Should().ContainSingle().Which.Should().Be("highlights");
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_SendsTokenAndAppKeyQueryParametersWithNoBody()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.SeeOther, "", response =>
+            response.Headers.Location = new Uri("https://myapp.com/?data_exchange_status=granted"));
+        var client = BuildClientFromHandler(handler);
+
+        await client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        handler.LastRequest!.Method.Should().Be(HttpMethod.Post);
+        handler.LastRequest.Headers.Authorization.Should().BeNull();
+        handler.LastRequest.RequestUri!.Query.Should().Contain("token=dx-tok").And.Contain("x-yvp-app-key=test-app-key");
+        handler.LastRequestBody.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsInvalidOperationException_WhenAppKeyNotConfigured()
+    {
+        var client = BuildClient(HttpStatusCode.SeeOther, "", appKey: null);
+
+        var act = () => client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*AppKey*");
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsArgumentException_WhenTokenIsEmpty()
+    {
+        var client = BuildClient(HttpStatusCode.SeeOther, "");
+
+        var act = () => client.CompleteDataExchangeApprovalAsync("");
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsYouVersionApiException_WhenResponseIsNotSeeOther()
+    {
+        var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""");
+
+        var act = () => client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
     }
 
     // -------------------------------------------------------------------------
@@ -482,7 +653,8 @@ public sealed class OAuthClientTests
     private static YouVersionOAuthClient BuildClient(
         HttpStatusCode status,
         string json,
-        FakeTokenProvider? tokenProvider = null)
+        FakeTokenProvider? tokenProvider = null,
+        string? appKey = "test-app-key")
     {
         var handler = new FakeHttpMessageHandler(status, json);
         var httpClient = new HttpClient(handler)
@@ -496,16 +668,19 @@ public sealed class OAuthClientTests
             AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
+        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
         return new YouVersionOAuthClient(
             httpClient,
             options,
+            apiOptions,
             tokenProvider ?? new FakeTokenProvider(),
             NullLogger<YouVersionOAuthClient>.Instance);
     }
 
     private static YouVersionOAuthClient BuildClientFromHandler(
         FakeHttpMessageHandler handler,
-        FakeTokenProvider? tokenProvider = null)
+        FakeTokenProvider? tokenProvider = null,
+        string? appKey = "test-app-key")
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
         var options = Options.Create(new YouVersionOAuthOptions
@@ -515,9 +690,11 @@ public sealed class OAuthClientTests
             AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
+        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
         return new YouVersionOAuthClient(
             httpClient,
             options,
+            apiOptions,
             tokenProvider ?? new FakeTokenProvider(),
             NullLogger<YouVersionOAuthClient>.Instance);
     }

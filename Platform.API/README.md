@@ -71,6 +71,95 @@ builder.Services
 
 > `AddYouVersionApiClients(...)` must be called before `AddYouVersionOAuth(...)`.
 
+## Data Exchange (resource permissions)
+
+Signing in only grants identity. To let a user grant your app access to a protected resource
+(currently `highlights`), they need to go through the **Data Exchange approval page** — a
+separate, explicit consent step. Once approved, the same access token from sign-in becomes
+authorized for that resource; no new token is issued. There are two ways to trigger this,
+depending on when you need consent:
+
+### Requesting permissions during sign-in (recommended)
+
+Pass `requestedPermissions` to `BuildAuthorizationUrl`. YouVersion shows the consent UI as part
+of the same sign-in redirect — no extra round trip. In practice the grant result has been observed
+arriving via **either** of two shapes, and your callback handler should be prepared for both:
+
+- Folded into the same callback that carries `code`/`state`, as a `granted_permissions` query
+  parameter (comma-separated; empty string if requested but denied; omitted if nothing was
+  requested); or
+- As a **separate** follow-up hit on your `RedirectUri` carrying `data_exchange_status` — the same
+  shape the standalone flow below uses. Call `ParseDataExchangeCallback` to handle it.
+
+```csharp
+var authRequest = oauthClient.BuildAuthorizationUrl(state, requestedPermissions: ["highlights"]);
+return Results.Redirect(authRequest.AuthorizationUrl.AbsoluteUri);
+
+// On your configured RedirectUri, alongside code/state (first shape):
+var granted = ctx.Request.Query["granted_permissions"].ToString()
+    .Split(',', StringSplitOptions.RemoveEmptyEntries);
+var highlightsGranted = granted.Contains("highlights", StringComparer.OrdinalIgnoreCase);
+
+// Or, if it instead arrives as a separate callback (second shape):
+var result = oauthClient.ParseDataExchangeCallback(new Uri(ctx.Request.GetEncodedUrl()));
+```
+
+See `PlatformTestApp/Program.cs` for a complete working example that handles both shapes.
+
+### Requesting permissions after the user is already signed in
+
+Use this when you need to ask for a resource permission later, without sending the user through
+a full sign-in round trip again. The flow has three parts:
+
+1. **Request a short-lived Data Exchange token** — `RequestPermissionsAsync` calls
+   `POST /data-exchange/token` with the signed-in user's access token and returns a
+   `DataExchangeToken` (opaque, single-use, expires in ~5 minutes).
+2. **Redirect the user to the approval page** — `BuildDataExchangeApprovalUrl` builds the
+   `GET /data-exchange` URL. Because this is a top-level browser redirect, it can't carry the
+   `X-YVP-App-Key` header, so the app key is included as an `x-yvp-app-key` query parameter
+   instead (sourced from `YouVersionApiOptions.AppKey`).
+3. **Handle the callback** — YouVersion redirects the browser back to your configured
+   `RedirectUri` with the outcome in the query string. Call `ParseDataExchangeCallback` to turn
+   that into a typed `DataExchangeCallbackResult` (`Status`, `GrantedPermissions`,
+   `DeniedPermissions`, `Error`, `ErrorDescription`) instead of hand-parsing query parameters.
+
+```csharp
+// After ExchangeCodeAsync succeeds during sign-in:
+var dataExchangeToken = await oauthClient.RequestPermissionsAsync(["highlights"]);
+var approvalUrl = oauthClient.BuildDataExchangeApprovalUrl(dataExchangeToken.Token);
+return Results.Redirect(approvalUrl.AbsoluteUri);
+
+// Later, on your configured RedirectUri:
+var result = oauthClient.ParseDataExchangeCallback(new Uri(ctx.Request.GetEncodedUrl()));
+switch (result.Status)
+{
+    case DataExchangeStatus.Granted:
+        // result.GrantedPermissions contains "highlights"
+        break;
+    case DataExchangeStatus.Cancelled:
+        // the user declined; result.DeniedPermissions / result.Error explain why
+        break;
+    case DataExchangeStatus.Error:
+        // a recoverable error occurred; see result.Error / result.ErrorDescription
+        break;
+}
+```
+
+### Completing approval without the browser page
+
+A confidential client that already has another basis for the user's consent can skip the
+browser redirect entirely and complete approval directly, using the token from step 1:
+
+```csharp
+var dataExchangeToken = await oauthClient.RequestPermissionsAsync(["highlights"]);
+var result = await oauthClient.CompleteDataExchangeApprovalAsync(dataExchangeToken.Token);
+```
+
+This calls `POST /data-exchange?token={token}` and parses the resulting `303` redirect's
+`Location` header with the same `DataExchangeCallbackResult` used by the browser flow. The
+permissions being granted are the ones fixed when the token was created — `POST /data-exchange`
+takes no request body, so they can't (and don't need to) be sent again here.
+
 ## Common usage examples
 
 ### List available Bible versions

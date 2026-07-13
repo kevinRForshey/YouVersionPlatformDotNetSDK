@@ -112,5 +112,16 @@ for entry in "${PROJECTS[@]}"; do
   dotnet pack "$project_dir" -c "$CONFIGURATION" --no-build -o "$OUTPUT_DIR"
 done
 
-log "Done. Packages written to $OUTPUT_DIR"
+log "Packages written to $OUTPUT_DIR"
 ls -1 "$OUTPUT_DIR"/*.nupkg
+
+# Restore before building the solution so PlatformTestApp (which consumes the
+# SDK via the YouVersionLocal feed, not a ProjectReference) picks up the
+# packages just built above rather than whatever was last cached.
+log "Restoring YouVersionPlatform.slnx"
+dotnet restore YouVersionPlatform.slnx --force
+
+log "Building YouVersionPlatform.slnx ($CONFIGURATION)"
+dotnet build YouVersionPlatform.slnx -c "$CONFIGURATION" --no-restore
+
+log "Done."

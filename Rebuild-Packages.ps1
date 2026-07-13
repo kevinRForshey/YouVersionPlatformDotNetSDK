@@ -79,13 +79,20 @@ foreach ($entry in $projects.GetEnumerator()) {
     Assert-LastExitCode "dotnet pack $label"
 }
 
-# ── 4. Restore PlatformTestApp ───────────────────────────────────────────────
-Write-Step "Restoring PlatformTestApp"
-$testApp = Join-Path $SolutionRoot "PlatformTestApp\PlatformTestApp.csproj"
-dotnet restore $testApp --force
-Assert-LastExitCode "dotnet restore PlatformTestApp"
+# ── 4. Restore and build the solution ────────────────────────────────────────
+# Restore first (--force) so PlatformTestApp, which consumes the SDK via the
+# YouVersionLocal feed rather than a ProjectReference, picks up the packages
+# just packed above instead of whatever was last cached.
+$sln = Join-Path $SolutionRoot "YouVersionPlatform.slnx"
+
+Write-Step "Restoring solution"
+dotnet restore $sln --force
+Assert-LastExitCode "dotnet restore $sln"
+
+Write-Step "Building solution ($Configuration)"
+dotnet build $sln --configuration $Configuration --no-restore
+Assert-LastExitCode "dotnet build $sln"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
-Write-Host "`n  All packages rebuilt and PlatformTestApp restored successfully." -ForegroundColor Green
+Write-Host "`n  All packages rebuilt and the solution built successfully." -ForegroundColor Green
 Write-Host "  Local feed : $LocalFeed" -ForegroundColor Gray
-Write-Host "  Next step  : dotnet build PlatformTestApp\PlatformTestApp.csproj`n" -ForegroundColor Gray
