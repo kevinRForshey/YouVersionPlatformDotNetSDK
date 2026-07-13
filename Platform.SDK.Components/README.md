@@ -38,7 +38,9 @@ The fastest way to a working reader is the all-in-one `BibleReader`:
 
 That's it — `BibleReader` composes every picker below, plus sign-in and highlighting, into one
 component. Reach for the individual pickers only when you need a different layout or workflow than
-`BibleReader` provides (see `/custom-reader` in `PlatformTestApp` for a working example).
+`BibleReader` provides (see `/custom-reader` in `PlatformTestApp` for a working example, including
+highlighting — see [Enabling highlighting in a custom composition](#enabling-highlighting-in-a-custom-composition)
+below).
 
 ## Component reference
 
@@ -212,6 +214,69 @@ Behavior notes:
 - A 401 from the highlights API (token expired server-side, or the user never granted the separate
   highlights permission during sign-in) surfaces as an inline prompt to sign in again, distinct from
   other load/save failures.
+
+#### Enabling highlighting in a custom composition
+
+`VerseComponent` supports highlighting out of the box (that's exactly what `BibleReader` uses it
+for internally), so wiring it into your own hand-built reader is just a matter of deciding *when*
+`EnableHighlighting` should be `true`. That decision has two parts, both driven by state that lives
+outside `VerseComponent` itself:
+
+1. **Is the user signed in?** Check via `ITokenProvider` — highlighting always requires an OAuth
+   session, and `VerseComponent` won't call the highlights API at all when `EnableHighlighting` is
+   `false`.
+2. **Has the user granted the separate `highlights` Data Exchange permission?** Signing in does
+   *not* implicitly grant it — it's requested via a separate redirect
+   (`AddYouVersionOAuth`'s Data Exchange flow), and the result comes back on the query string (e.g.
+   `?highlights=granted` / `?highlights=denied`) after the approval round-trip. Persist that grant
+   somewhere durable (a cookie, distributed cache, or your own user record) so highlighting stays on
+   across page reloads instead of resetting to off every time the query parameter is absent.
+
+`PlatformTestApp`'s `Home.razor` and `/custom-reader`'s `CustomReader.razor` both follow this exact
+pattern — a `HighlightsPermissionStore` (a small `IDistributedCache`-backed helper local to the test
+app, not part of this package) is checked in `OnInitializedAsync`, then re-checked in
+`OnAfterRenderAsync(firstRender: true)` because a token or grant persisted during the OAuth callback
+round-trip may not be visible in the SSR prerender scope `OnInitializedAsync` ran in:
+
+```razor
+@inject ITokenProvider TokenProvider
+@inject NavigationManager Nav
+
+@if (_isSignedIn && !_highlightsEnabled)
+{
+    <button @onclick="RequestHighlightsAsync">Grant highlights access</button>
+}
+<VerseComponent Passage="@passage"
+                VersionId="@version.Id"
+                EnableHighlighting="@_highlightsEnabled" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "highlights")]
+    public string? HighlightsStatus { get; set; }
+
+    private bool _highlightsEnabled;
+    private bool _isSignedIn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _highlightsEnabled = HighlightsStatus switch
+        {
+            "granted" => true,
+            "denied" => false,
+            _ => await PermissionStore.GetGrantedAsync() // your own persisted grant lookup
+        };
+        _isSignedIn = (await TokenProvider.GetTokenAsync()) is { } t && !t.IsExpired();
+    }
+
+    // Forcing a full page load bypasses Blazor's enhanced navigation, which would otherwise try to
+    // diff the redirect response into the page instead of following it to the off-site approval page.
+    private void RequestHighlightsAsync() => Nav.NavigateTo("/auth/request-highlights", forceLoad: true);
+}
+```
+
+If you use `BibleReader` instead of composing `VerseComponent` directly, the same two checks apply —
+just compute `_highlightsEnabled` the same way and pass it as `BibleReader`'s `EnableHighlighting`
+parameter (this is exactly what `Home.razor` does).
 
 ---
 
