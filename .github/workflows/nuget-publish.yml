@@ -32,6 +32,9 @@ jobs:
       - name: Pack Platform.API.Models
         run: dotnet pack Platform.API.Models -c Release --no-build -o ./nupkgs
 
+      - name: Pack YouVersion.UsfmReferences
+        run: dotnet pack YouVersion.UsfmReferences -c Release --no-build -o ./nupkgs
+
       - name: Pack Platform.API
         run: dotnet pack Platform.API -c Release --no-build -o ./nupkgs
 
