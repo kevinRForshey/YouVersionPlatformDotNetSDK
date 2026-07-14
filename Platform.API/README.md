@@ -22,7 +22,7 @@ Add package references as needed:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="YouVersion.Platform.API" Version="0.1.0" />
+  <PackageReference Include="YouVersion.Platform.API" Version="0.1.1" />
 </ItemGroup>
 ```
 

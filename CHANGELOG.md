@@ -2,10 +2,22 @@
 
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Package versions are MinVer-derived from
-git tags (see `README.md` — "Versioning & Releases"); nothing has been tagged yet, so everything
-below is pre-`v1.0.0`.
+git tags (see `README.md` — "Versioning & Releases").
 
 ## [Unreleased]
+
+### Fixed
+- `Platform.API/README.md`'s install snippet showed a stale `Version="1.0.0"` that doesn't exist on
+  the feed (actual published version was `0.1.0`), which would cause a restore failure for anyone
+  copying it as-is.
+- The "Additional docs" links (Getting started / Authentication / OAuth guide) on
+  `Platform.API/README.md` were relative markdown links that resolve fine on GitHub but render as
+  dead links on NuGet.org's README renderer. Converted to absolute GitHub URLs; same fix applied to
+  the top-level `README.md`'s OAuth/PKCE guide link. `docs/getting-started.md` and
+  `docs/authentication.md` were also missing entirely (the "Getting started" and "Authentication"
+  links pointed at files that had never been created) — both added.
+
+## [0.1.0] - 2026-07-14
 
 ### Added
 - `IYouVersionOAuthClient.BuildAuthorizationUrl` now accepts an optional `requestedPermissions`
