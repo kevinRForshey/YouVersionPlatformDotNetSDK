@@ -62,3 +62,4 @@ nunit-*.xml
 # Local secrets / environment-specific settings
 appsettings.Development.json
 appsettings.*.local.json
+/.idea/.idea.YouVersionPlatform/.idea
