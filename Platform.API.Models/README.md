@@ -1,5 +1,7 @@
 # Unofficial-YouVersion.Platform.API.Models
 
+Part of the [YouVersion Platform SDK for .NET](../README.md).
+
 Domain model types for the [YouVersion Platform REST API](https://developers.youversion.com).
 
 This package is a zero-dependency, pure-POCO library - no external NuGet dependencies required.
@@ -33,3 +35,13 @@ net10.0
 ## Attribution
 
 Always display the version Copyright field alongside Passage.Reference when showing Bible text.
+
+## Related packages
+
+This package has no dependencies on other packages in this SDK. It's consumed by:
+
+- [`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md) — typed HTTP clients that return these model types.
+- [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md) — business-logic services built on top of `Platform.API`.
+- [`Unofficial-YouVersion.Platform.SDK.Components`](../Platform.SDK.Components/README.md) — Blazor components that render these types.
+
+See the [solution README](../README.md) for the full package list and architecture overview.
