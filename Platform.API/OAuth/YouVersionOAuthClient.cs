@@ -69,12 +69,9 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
         query.Append("&code_challenge_method=S256");
         query.Append("&scope="); query.Append(Uri.EscapeDataString(scopes));
 
-        // Requesting permissions here (rather than via the separate RequestPermissionsAsync +
-        // BuildDataExchangeApprovalUrl round trip) shows the consent UI as part of this same
-        // sign-in redirect. In practice the grant result has been observed arriving both ways:
-        // as `granted_permissions` alongside `code`/`state` on this same callback, and as a
-        // separate follow-up callback carrying `data_exchange_status` (the same shape
-        // ParseDataExchangeCallback handles). Callers should be prepared for either.
+        // Shows the consent UI inline with sign-in. Grant result arrives either as
+        // `granted_permissions` on this same callback or as a separate `data_exchange_status`
+        // callback (see ParseDataExchangeCallback) — callers should handle both.
         if (requestedPermissions is not null)
         {
             foreach (var permission in requestedPermissions)
@@ -335,11 +332,9 @@ internal sealed class YouVersionOAuthClient : IYouVersionOAuthClient
 
         _logger.LogDebug("Completing data exchange approval for token.");
 
-        // POST /data-exchange takes no request body — the permissions being granted were already
-        // fixed when the token was created via RequestPermissionsAsync (POST /data-exchange/token).
-        // The `token` query parameter alone is what the API needs to finalize the grant; sending an
-        // `Authorization` bearer header here is a *separate*, mutually-exclusive path the API
-        // reserves for clients that skip token creation entirely, which this SDK doesn't do.
+        // No request body: permissions were already fixed when the token was created via
+        // RequestPermissionsAsync. A Bearer header is a separate, mutually-exclusive auth path
+        // for clients that skip token creation entirely — not used here.
         var url = $"{_options.DataExchangeEndpoint}?token={Uri.EscapeDataString(dataExchangeToken)}" +
             $"&x-yvp-app-key={Uri.EscapeDataString(appKey)}";
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
