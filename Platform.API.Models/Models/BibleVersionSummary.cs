@@ -7,8 +7,8 @@ namespace Platform.API.Models;
 /// </summary>
 public sealed record BibleVersionSummary
 {
-    /// <summary>Gets the numeric identifier for this Bible version.</summary>
-    /// <value>The numeric identifier for this Bible version.</value>
+    /// <summary>Gets the USFM passage identifier (e.g. <c>JHN.3.16</c>, <c>GEN.1.1-3</c>).</summary>
+    /// <remarks>This value is normalized and validated by YouVersion.UsfmReferences before being sent to the API.</remarks>
     [JsonPropertyName("id")]
     public int Id { get; init; }
 
@@ -37,5 +37,7 @@ public sealed record BibleVersionSummary
     [JsonPropertyName("language_tag")]
     public string LanguageTag { get; init; } = string.Empty;
 
-    public string? Copyright { get; set; }
+    /// <summary>Gets the copyright notice for this version, if provided by the API.</summary>
+    [JsonPropertyName("copyright")]
+    public string? Copyright { get; init; }
 }

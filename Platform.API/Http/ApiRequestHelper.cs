@@ -27,8 +27,8 @@ internal static class ApiRequestHelper
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             logger.LogError(
-                "API request to '{Url}' failed with HTTP {StatusCode} {ReasonPhrase}.",
-                url, (int)response.StatusCode, response.ReasonPhrase);
+                "API request to '{Url}' failed with HTTP {StatusCode} {ReasonPhrase}. Response body: {Body}",
+                url, (int)response.StatusCode, response.ReasonPhrase, body);
             throw new YouVersionApiException(
                 response.StatusCode,
                 $"YouVersion API request to '{url}' failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).",

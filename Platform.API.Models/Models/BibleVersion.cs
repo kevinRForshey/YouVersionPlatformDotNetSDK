@@ -8,8 +8,8 @@ namespace Platform.API.Models;
 /// </summary>
 public sealed record BibleVersion
 {
-    /// <summary>Gets the unique numeric identifier for this Bible version.</summary>
-    /// <value>The numeric identifier for this Bible version.</value>
+    /// <summary>Gets the USFM passage identifier (e.g. <c>JHN.3.16</c>, <c>GEN.1.1-3</c>).</summary>
+    /// <remarks>This value is normalized and validated by YouVersion.UsfmReferences before being sent to the API.</remarks>
     [JsonPropertyName("id")]
     public int Id { get; init; }
 

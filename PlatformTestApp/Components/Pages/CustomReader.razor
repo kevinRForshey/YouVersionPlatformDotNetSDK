@@ -1,0 +1,184 @@
+@page "/custom-reader"
+@using Platform.SDK.Components.BibleComponents
+@using Platform.SDK.Components.BibleComponents.Verses
+@using Platform.SDK.Services
+@using Platform.API.Models
+@using Platform.API.OAuth
+@using PlatformTestApp.Auth
+@inject IBibleReaderStateService State
+@inject IPassageService PassageService
+@inject HighlightsPermissionStore PermissionStore
+@inject ITokenProvider TokenProvider
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Custom Builder — YouVersion SDK sample app</PageTitle>
+
+<div class="cr-page">
+
+    <header class="cr-header">
+        <div class="cr-header-top">
+            <div class="cr-header-meta">
+                <span class="cr-tag">SDK COMPONENTS</span>
+                <span class="cr-tag cr-tag--dim">v1.0.0</span>
+            </div>
+            <YouVersionAuth OAuthError="@OAuthError" />
+        </div>
+        <h1 class="cr-title">Build Your Own Reader</h1>
+        <p class="cr-subtitle">
+            Demonstration of using the SDK to build a custom
+            Bible Reader in steps as opposed to the all in one component,
+            using individual components.
+        </p>
+    </header>
+
+    @if (HighlightsStatus == "denied")
+    {
+        <div class="alert alert-warning">Highlights access was not granted, so verse highlighting is unavailable.</div>
+    }
+    @if (_isSignedIn && !_highlightsEnabled)
+    {
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>Sign-in doesn't request highlights access by itself &mdash; grant it separately to enable verse highlighting.</span>
+            <button class="read-passage-button" @onclick="RequestHighlightsAsync">Grant highlights access</button>
+        </div>
+    }
+
+
+    
+    @* Putting the components together *@
+    <div class="cr-pipeline">
+
+        <div class="cr-step @(State.SelectedVersion is not null ? "cr-step--done" : "")">
+            <div class="cr-step-hd">
+                <span class="cr-step-num">01</span>
+                <span class="cr-step-name">Bible Version </span>
+                @if (State.SelectedVersion is not null)
+                {
+                    <span class="cr-step-check">✓</span>
+                }
+            </div>
+            <div class="cr-step-body">
+                <VersionPicker LanguageRange="en" />
+            </div>
+        </div>
+
+        <div class="cr-pipe-arrow" aria-hidden="true">↓</div>
+
+        <div class="cr-step @(State.SelectedBook is not null ? "cr-step--done" : "") @(State.SelectedVersion is null ? "cr-step--locked" : "")">
+            <div class="cr-step-hd">
+                <span class="cr-step-num">02</span>
+                <span class="cr-step-name">Book </span>
+                @if (State.SelectedBook is not null)
+                {
+                    <span class="cr-step-check">✓</span>
+                }
+            </div>
+            <div class="cr-step-body">
+                <BookPicker />
+            </div>
+        </div>
+
+        <div class="cr-pipe-arrow" aria-hidden="true">↓</div>
+
+        <div class="cr-step @(State.SelectedChapter is not null ? "cr-step--done" : "") @(State.SelectedBook is null ? "cr-step--locked" : "")">
+            <div class="cr-step-hd">
+                <span class="cr-step-num">03</span>
+                <span class="cr-step-name">Chapter </span>
+                @if (State.SelectedChapter is not null)
+                {
+                    <span class="cr-step-check">✓</span>
+                }
+            </div>
+            <div class="cr-step-body">
+                <ChapterPicker />
+            </div>
+        </div>
+
+        <div class="cr-pipe-arrow" aria-hidden="true">↓</div>
+
+        <div class="cr-step @(State.SelectedVerseStart is not null ? "cr-step--done" : "") @(State.SelectedChapter is null ? "cr-step--locked" : "")">
+            <div class="cr-step-hd">
+                <span class="cr-step-num">04</span>
+                <span class="cr-step-name">Verse </span>
+                @if (State.SelectedVerseStart is not null)
+                {
+                    <span class="cr-step-check">✓</span>
+                }
+            </div>
+            <div class="cr-step-body">
+                @if (State.SelectedChapter is not null &&
+                     State.SelectedBook is not null &&
+                     State.SelectedVersion is not null)
+                {
+                    <VersePicker />
+                }
+                else
+                {
+                    <p class="cr-locked-hint">Select a chapter first.</p>
+                }
+            </div>
+        </div>
+
+        <div class="cr-pipe-arrow" aria-hidden="true">↓</div>
+
+        <div class="cr-execute">
+            <button class="cr-exec-btn"
+                    @onclick="ReadAsync"
+                    disabled="@(!CanRead || _loading)">
+                @if (_loading)
+                {
+                    <span class="cr-exec-prefix cr-spin">◌</span>
+                    <span>Loading…</span>
+                }
+                else
+                {
+                    <span>Read Passage</span>
+                }
+            </button>
+        </div>
+
+    </div>
+
+    @* Output *@
+    <div class="cr-output" aria-live="polite">
+
+        <div class="cr-output-hd">
+            <span class="cr-output-label">// OUTPUT</span>
+            @if (_passage is not null)
+            {
+                <span class="cr-output-ref">@_passage.Reference</span>
+            }
+        </div>
+
+        <div class="cr-output-body">
+            @if (_loading)
+            {
+                <p class="cr-loading"><span class="cr-spin">◌</span> fetching passage…</p>
+            }
+            else if (_error is not null)
+            {
+                <p class="cr-error-msg">⚠ @_error</p>
+            }
+            else if (_passage is not null)
+            {
+                <VerseComponent Passage="@(_passage!)"
+                            Copyright="@State.SelectedVersion?.Copyright"
+                            VersionId="@(State.SelectedVersion?.Id ?? 0)"
+                            EnableHighlighting="@_highlightsEnabled" />
+            }
+            else if (CanRead)
+            {
+                <p class="cr-ready-hint">
+                    Ready — <span class="cr-val">@State.SelectedBook?.Usfm @State.SelectedChapter : @State.SelectedVerseStart</span> — press Execute above.
+                </p>
+            }
+            else
+            {
+                <p class="cr-empty">// complete all four steps, then execute</p>
+            }
+        </div>
+    </div>
+
+</div>

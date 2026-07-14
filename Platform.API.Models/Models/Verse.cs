@@ -8,7 +8,11 @@ namespace Platform.API.Models;
 public sealed record Verse
 {
     /// <summary>Gets the USFM verse identifier (e.g. <c>JHN.3.16</c>).</summary>
-    /// <value>The USFM verse identifier.</value>
+    /// <remarks>
+    /// This is a normalized, validated USFM verse reference from the YouVersion Platform API.
+    /// All USFM references passed to passage and highlight operations are validated against
+    /// YouVersion.UsfmReferences.BookCatalog before being sent to the API.
+    /// </remarks>
     [JsonPropertyName("usfm")]
     public string Usfm { get; init; } = string.Empty;
 
@@ -17,9 +21,12 @@ public sealed record Verse
     [JsonPropertyName("human")]
     public string Human { get; init; } = string.Empty;
     
-    /// <summary>
-    /// Holds the actual text of the verse. This is the content that will be displayed to users when they read the verse. It may contain formatting or special characters depending on the source of the verse text.
-    /// </summary>
+    /// <summary>Gets the verse's text content.</summary>
+    /// <remarks>
+    /// Only populated when sourced from <c>IPassageClient</c>. Verses returned from the
+    /// <c>/index</c> endpoint's book/chapter/verse structure carry no scripture text, so this
+    /// will be <see cref="string.Empty"/> in that case.
+    /// </remarks>
     [JsonPropertyName("text")]
     public string Text { get; init; } = string.Empty;
 }

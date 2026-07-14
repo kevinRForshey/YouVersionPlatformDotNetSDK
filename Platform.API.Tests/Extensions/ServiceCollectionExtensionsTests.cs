@@ -1,9 +1,10 @@
-using System;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Platform.API.Clients;
 using Platform.API.Extensions;
 using Platform.API.OAuth;
+using Platform.API.Tests.Fakes;
+using YouVersion.UsfmReferences;
 using Xunit;
 
 namespace Platform.API.Tests.Extensions;
@@ -33,6 +34,19 @@ public sealed class ServiceCollectionExtensionsTests
     {
         var sp = BuildProvider(withOAuth: false);
         sp.GetRequiredService<IHighlightClient>().Should().NotBeNull();
+    }
+
+    [Fact]
+    public void AddYouVersionApiClients_RegistersIUsfmReferenceService_AsSingleton()
+    {
+        var sp = BuildProvider(withOAuth: false);
+
+        var service1 = sp.GetRequiredService<IUsfmReferenceService>();
+        var service2 = sp.GetRequiredService<IUsfmReferenceService>();
+
+        service1.Should().NotBeNull();
+        service1.Should().BeOfType<UsfmReferenceService>();
+        service1.Should().BeSameAs(service2);
     }
 
     [Fact]
@@ -113,6 +127,47 @@ public sealed class ServiceCollectionExtensionsTests
     }
 
     // -------------------------------------------------------------------------
+    // End-to-end: bearer token actually flows through IHighlightClient's pipeline
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task AddYouVersionOAuth_AttachesBearerToken_ToLiveHighlightClientRequest()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddYouVersionApiClients(o => o.AppKey = "test-key");
+        services.AddYouVersionOAuth(o =>
+        {
+            o.ClientId = "test-client";
+            o.RedirectUri = new Uri("https://localhost/callback");
+        });
+
+        // Intercept the same named pipeline AddYouVersionOAuth appended the bearer handler to,
+        // via the shared constant rather than re-deriving the client name independently.
+        var capturingHandler = new CapturingHandler(
+            responseBody: """{"data":[]}""");
+        services.AddHttpClient(ServiceCollectionExtensions.HighlightClientName)
+            .ConfigurePrimaryHttpMessageHandler(() => capturingHandler);
+
+        var sp = services.BuildServiceProvider();
+
+        var tokenProvider = sp.GetRequiredService<ITokenProvider>();
+        await tokenProvider.StoreTokenAsync(new OAuthTokenResponse
+        {
+            AccessToken = "live-access-token",
+            ExpiresIn = 3600,
+            ReceivedAt = DateTimeOffset.UtcNow
+        });
+
+        var highlightClient = sp.GetRequiredService<IHighlightClient>();
+        await highlightClient.GetHighlightsAsync(3034, Reference.FromString("JHN.3.16"));
+
+        capturingHandler.LastRequest!.Headers.Authorization.Should().NotBeNull();
+        capturingHandler.LastRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
+        capturingHandler.LastRequest.Headers.Authorization!.Parameter.Should().Be("live-access-token");
+    }
+
+    // -------------------------------------------------------------------------
     // Custom ITokenProvider replacement
     // -------------------------------------------------------------------------
 
@@ -156,16 +211,16 @@ public sealed class ServiceCollectionExtensionsTests
 
     private sealed class CustomTokenProvider : ITokenProvider
     {
-        public System.Threading.Tasks.Task<OAuthTokenResponse?> GetTokenAsync(
-            System.Threading.CancellationToken ct = default)
-            => System.Threading.Tasks.Task.FromResult<OAuthTokenResponse?>(null);
+        public Task<OAuthTokenResponse?> GetTokenAsync(
+            CancellationToken ct = default)
+            => Task.FromResult<OAuthTokenResponse?>(null);
 
-        public System.Threading.Tasks.Task StoreTokenAsync(OAuthTokenResponse token,
-            System.Threading.CancellationToken ct = default)
-            => System.Threading.Tasks.Task.CompletedTask;
+        public Task StoreTokenAsync(OAuthTokenResponse token,
+            CancellationToken ct = default)
+            => Task.CompletedTask;
 
-        public System.Threading.Tasks.Task ClearTokenAsync(
-            System.Threading.CancellationToken ct = default)
-            => System.Threading.Tasks.Task.CompletedTask;
+        public Task ClearTokenAsync(
+            CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 }

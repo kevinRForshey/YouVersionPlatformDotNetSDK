@@ -9,7 +9,11 @@ namespace Platform.API.Models;
 public sealed record Passage
 {
     /// <summary>Gets the USFM passage identifier (e.g. <c>JHN.3.16</c>, <c>GEN.1.1-3</c>).</summary>
-    /// <value>The USFM passage identifier.</value>
+    /// <remarks>
+    /// This is a normalized, validated USFM passage reference from the YouVersion Platform API.
+    /// All USFM references passed to passage operations are validated against
+    /// YouVersion.UsfmReferences.BookCatalog before being sent to the API.
+    /// </remarks>
     [JsonPropertyName("id")]
     public string Id { get; init; } = string.Empty;
 

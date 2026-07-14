@@ -1,20 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+      <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
     <!-- NuGet package identity -->
     <PackageId>YouVersion.Platform.API</PackageId>
-    <Version>1.0.0</Version>
     <Authors>Kevin Forshey</Authors>
-    <Company>MyndTek Ltd.</Company>
     <Product>YouVersion Platform API Client</Product>
     <Description>HTTP client SDK for the YouVersion Platform REST API. Provides typed clients for Bibles, Passages, and Highlights with built-in Microsoft.Extensions.Http integration and DI support.</Description>
     <PackageTags>youversion;bible;api;httpclient;sdk;dependencyinjection</PackageTags>
-    <PackageProjectUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
 
@@ -35,11 +33,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <ProjectReference Include="..\YouVersion.UsfmReferences\YouVersion.UsfmReferences.csproj" />
   </ItemGroup>
 
   <ItemGroup>

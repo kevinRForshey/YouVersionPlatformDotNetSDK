@@ -6,7 +6,12 @@ namespace Platform.API.Exceptions;
 /// <summary>
 /// Exception thrown when the YouVersion Platform API returns a non-success HTTP response.
 /// </summary>
-public sealed class YouVersionApiException : Exception
+/// <remarks>
+/// <see cref="StatusCode"/> always reflects the actual wire-level HTTP status for this type.
+/// For a successful response whose body was null, empty, or unparsable, see the dedicated
+/// <see cref="YouVersionEmptyResponseException"/> subtype instead of a fabricated status code.
+/// </remarks>
+public class YouVersionApiException : Exception
 {
     /// <summary>The HTTP status code returned by the API.</summary>
     public HttpStatusCode StatusCode { get; }

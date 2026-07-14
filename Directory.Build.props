@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    Repo-wide versioning via MinVer: package/assembly versions are derived from the
+    nearest git tag (prefixed "v", e.g. v1.2.0) instead of being hand-edited per csproj.
+    Untagged commits get an automatic prerelease suffix (e.g. 1.2.1-alpha.0.3), so local
+    and CI builds always produce a valid, monotonically increasing version with zero
+    manual bookkeeping. See README.md "Versioning & Releases" for the release process.
+  -->
+  <PropertyGroup>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!--
+    Deterministic output on CI only, so local builds stay reproducible byte-for-byte from a given
+    commit (needed for SourceLink to embed normalized "/_/..." paths in PDBs instead of the CI
+    runner's absolute build path), while local dev builds stay unaffected.
+  -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

@@ -183,7 +183,8 @@
             0 8px 20px rgba(255, 122, 26, 0.08);
 }
 
-.read-passage-button {
+/* ::deep allows these styles to reach into the YouVersionAuth child component */
+::deep .read-passage-button {
     min-height: 4.8rem;
     border: 0;
     border-radius: 20px;
@@ -201,7 +202,7 @@
             opacity 160ms ease;
 }
 
-.read-passage-button:hover:not(:disabled) {
+::deep .read-passage-button:hover:not(:disabled) {
     transform: translateY(-2px);
     filter: saturate(1.08);
     box-shadow:
@@ -209,14 +210,14 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.32);
 }
 
-.read-passage-button:active:not(:disabled) {
+::deep .read-passage-button:active:not(:disabled) {
     transform: translateY(0);
     box-shadow:
             0 10px 24px rgba(255, 122, 26, 0.26),
             inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
-.read-passage-button:disabled {
+::deep .read-passage-button:disabled {
     cursor: not-allowed;
     opacity: 0.52;
     background: linear-gradient(135deg, #d8c7b6 0%, #c8b29d 100%);
@@ -249,7 +250,7 @@
         border-radius: 18px;
     }
 
-    .read-passage-button {
+    ::deep .read-passage-button {
         min-height: 3.25rem;
         border-radius: 18px;
     }

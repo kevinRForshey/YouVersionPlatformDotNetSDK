@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace Platform.API.Configuration;
@@ -15,17 +14,14 @@ public sealed class YouVersionApiOptions
     public const string SectionName = "YouVersionApi";
 
     /// <summary>
-    /// Your YouVersion Platform app key. Sent as the <c>X-YVP-App-Key</c> header on every request.
-    /// App keys are <em>not</em> secrets and may be included in source code or client bundles.
+    /// Your YouVersion Platform app key. Sent as the <c>X-YVP-App-Key</c> header
     /// Obtain one at <see href="https://platform.youversion.com"/>.
     /// </summary>
     [Required]
     public string AppKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// The base URL of the YouVersion Platform API.
-    /// Defaults to <c>https://api.youversion.com</c>.
-    /// Override only in testing scenarios.
+    /// Base URL <c>https://api.youversion.com</c>.
     /// </summary>
     public Uri BaseAddress { get; set; } = new("https://api.youversion.com");
 

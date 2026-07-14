@@ -1,22 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+      <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-
 
       <!-- NuGet package identity -->
       <PackageId>YouVersion.Platform.SDK.Components</PackageId>
-      <Version>1.0.0</Version>
       <Authors>Kevin Forshey</Authors>
-      <Company>MyndTek Ltd.</Company>
       <Product>YouVersion Platform SDK Components</Product>
-      <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, passage display, and related components with Fluent UI integration.</Description>
-      <PackageTags>youversion;bible;blazor;components;sdk;fluentui</PackageTags>
-      <PackageProjectUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</PackageProjectUrl>
-      <RepositoryUrl>https://github.com/kevinRForshey/SimpleYouVersionPlatformDotNetSDK</RepositoryUrl>
+      <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, click-to-highlight passage display, highlight list, and related components.</Description>
+      <PackageTags>youversion;bible;blazor;components;sdk</PackageTags>
+      <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
       <PackageReadmeFile>README.md</PackageReadmeFile>
 
@@ -33,13 +29,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.2" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Emoji" Version="4.14.2" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.14.2" />
+    <ProjectReference Include="..\YouVersion.UsfmReferences\YouVersion.UsfmReferences.csproj" />
   </ItemGroup>
 
   <ItemGroup>

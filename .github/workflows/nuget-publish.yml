@@ -1,0 +1,49 @@
+name: Publish NuGet Packages
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Test
+        run: dotnet test -c Release --no-build --verbosity normal
+
+      # Pack in strict dependency order so inter-package refs resolve correctly
+      - name: Pack Platform.API.Models
+        run: dotnet pack Platform.API.Models -c Release --no-build -o ./nupkgs
+
+      - name: Pack Platform.API
+        run: dotnet pack Platform.API -c Release --no-build -o ./nupkgs
+
+      - name: Pack Platform.SDK.Services
+        run: dotnet pack Platform.SDK.Services -c Release --no-build -o ./nupkgs
+
+      - name: Pack Platform.SDK.Components
+        run: dotnet pack Platform.SDK.Components -c Release --no-build -o ./nupkgs
+
+      - name: Push to NuGet.org
+        run: |
+          dotnet nuget push ./nupkgs/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

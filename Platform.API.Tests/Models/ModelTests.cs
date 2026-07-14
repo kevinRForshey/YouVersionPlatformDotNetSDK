@@ -184,29 +184,187 @@ public sealed class HighlightTests
     public void Highlight_DeserializesFromJson_Correctly()
     {
         const string json = """
-            {
-              "id": "hl-1", "usfm": "JHN.3.16", "version_id": 3034,
-              "color": "Yellow",
-              "created_at": "2024-06-01T12:00:00Z",
-              "updated_at": "2024-06-01T13:00:00Z"
-            }
+            { "bible_id": 3034, "passage_id": "JHN.3.16", "color": "44aa44" }
             """;
 
         var highlight = JsonSerializer.Deserialize<Highlight>(json)!;
 
-        highlight.Id.Should().Be("hl-1");
-        highlight.Usfm.Should().Be("JHN.3.16");
-        highlight.VersionId.Should().Be(3034);
-        highlight.Color.Should().Be(HighlightColor.Yellow);
-        highlight.CreatedAt.Should().BeAfter(System.DateTimeOffset.MinValue);
+        highlight.BibleId.Should().Be(3034);
+        highlight.PassageId.Should().Be("JHN.3.16");
+        highlight.Color.Should().Be("44aa44");
     }
 
     [Fact]
     public void Highlight_DefaultValues_AreEmpty()
     {
         var h = new Highlight();
-        h.Id.Should().BeEmpty();
-        h.Usfm.Should().BeEmpty();
-        h.VersionId.Should().Be(0);
+        h.PassageId.Should().BeEmpty();
+        h.BibleId.Should().Be(0);
+        h.Color.Should().BeEmpty();
+    }
+}
+
+public sealed class VerseTests
+{
+    [Fact]
+    public void Verse_DeserializesFromJson_Correctly()
+    {
+        const string json = """
+            { "usfm": "JHN.3.16", "human": "John 3:16", "text": "For God so loved..." }
+            """;
+
+        var verse = JsonSerializer.Deserialize<Verse>(json)!;
+
+        verse.Usfm.Should().Be("JHN.3.16");
+        verse.Human.Should().Be("John 3:16");
+        verse.Text.Should().Contain("God so loved");
+    }
+
+    [Fact]
+    public void Verse_DefaultValues_AreEmpty()
+    {
+        var verse = new Verse();
+        verse.Usfm.Should().BeEmpty();
+        verse.Human.Should().BeEmpty();
+        verse.Text.Should().BeEmpty();
+    }
+}
+
+public sealed class BibleVersionSummaryTests
+{
+    [Fact]
+    public void BibleVersionSummary_DeserializesCopyright_Correctly()
+    {
+        const string json = """
+            {
+              "id": 3034, "abbreviation": "BSB", "localized_abbreviation": "BSB",
+              "title": "Berean Standard Bible", "localized_title": "Berean Standard Bible",
+              "language_tag": "en", "copyright": "Public Domain"
+            }
+            """;
+
+        var summary = JsonSerializer.Deserialize<BibleVersionSummary>(json)!;
+
+        summary.Copyright.Should().Be("Public Domain");
+    }
+
+    [Fact]
+    public void BibleVersionSummary_Copyright_DefaultsToNull()
+    {
+        var summary = new BibleVersionSummary();
+        summary.Copyright.Should().BeNull();
+    }
+}
+
+public sealed class BookCanonTests
+{
+    [Theory]
+    [InlineData("old_testament", BookCanon.OldTestament)]
+    [InlineData("new_testament", BookCanon.NewTestament)]
+    [InlineData("deuterocanon", BookCanon.Deuterocanon)]
+    public void BookCanon_DeserializesKnownValues_Correctly(string wireValue, BookCanon expected)
+    {
+        var json = $$"""{"canon":"{{wireValue}}"}""";
+        var book = JsonSerializer.Deserialize<IndexBook>(json)!;
+
+        book.Canon.Should().Be(expected);
+    }
+
+    [Fact]
+    public void BookCanon_DeserializesUnrecognizedValue_AsUnknown()
+    {
+        const string json = """{"canon":"some_future_canon"}""";
+        var book = JsonSerializer.Deserialize<IndexBook>(json)!;
+
+        book.Canon.Should().Be(BookCanon.Unknown);
+    }
+}
+
+public sealed class BibleIndexTests
+{
+    [Fact]
+    public void BibleIndex_DeserializesFromJson_Correctly()
+    {
+        const string json = """
+            {
+              "text_direction": "ltr",
+              "books": [
+                {
+                  "id": "GEN", "title": "Genesis", "full_title": "The Book of Genesis",
+                  "abbreviation": "Gen.", "canon": "old_testament",
+                  "chapters": [
+                    {
+                      "id": 1, "passage_id": "GEN.1", "title": 1,
+                      "verses": [
+                        { "id": 1, "passage_id": "GEN.1.1", "title": 1 },
+                        { "id": 2, "passage_id": "GEN.1.2", "title": 2 }
+                      ]
+                    }
+                  ],
+                  "intro": { "id": "INTRO", "passage_id": "GEN.INTRO", "title": "Intro" }
+                }
+              ]
+            }
+            """;
+
+        var index = JsonSerializer.Deserialize<BibleIndex>(json)!;
+
+        index.TextDirection.Should().Be("ltr");
+        index.Books.Should().HaveCount(1);
+
+        var book = index.Books[0];
+        book.Usfm.Should().Be("GEN");
+        book.Title.Should().Be("Genesis");
+        book.FullTitle.Should().Be("The Book of Genesis");
+        book.Abbreviation.Should().Be("Gen.");
+        book.Canon.Should().Be(BookCanon.OldTestament);
+        book.Chapters.Should().HaveCount(1);
+        book.Intro.Should().NotBeNull();
+        book.Intro!.Id.Should().Be("INTRO");
+        book.Intro.Title.Should().Be("Intro");
+
+        var chapter = book.Chapters[0];
+        chapter.Number.Should().Be(1);
+        chapter.Usfm.Should().Be("GEN.1");
+        chapter.Title.Should().Be("1");
+        chapter.Verses.Should().HaveCount(2);
+        chapter.Verses[0].Number.Should().Be(1);
+        chapter.Verses[0].Usfm.Should().Be("GEN.1.1");
+        chapter.Verses[0].Title.Should().Be("1");
+    }
+
+    [Fact]
+    public void BibleIndex_Intro_IsNull_WhenNotProvided()
+    {
+        const string json = """
+            {
+              "text_direction": "ltr",
+              "books": [
+                { "id": "EXO", "title": "Exodus", "full_title": "The Book of Exodus",
+                  "abbreviation": "Exo.", "canon": "old_testament", "chapters": [] }
+              ]
+            }
+            """;
+
+        var index = JsonSerializer.Deserialize<BibleIndex>(json)!;
+
+        index.Books[0].Intro.Should().BeNull();
+    }
+
+    [Fact]
+    public void BibleIndex_ChapterAndVerseTitle_AcceptsStringOrNumber()
+    {
+        const string numericJson = """{"id":1,"passage_id":"GEN.1","title":1,"verses":[]}""";
+        const string stringJson = """{"id":1,"passage_id":"GEN.1","title":"1","verses":[]}""";
+
+        JsonSerializer.Deserialize<IndexChapter>(numericJson)!.Title.Should().Be("1");
+        JsonSerializer.Deserialize<IndexChapter>(stringJson)!.Title.Should().Be("1");
+    }
+
+    [Fact]
+    public void BibleIndex_Books_DefaultsToEmpty()
+    {
+        var index = new BibleIndex();
+        index.Books.Should().BeEmpty();
     }
 }

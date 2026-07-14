@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Platform.API.Configuration;
 using Platform.API.Exceptions;
 using Platform.API.OAuth;
 using Platform.API.Tests.Fakes;
@@ -19,6 +20,39 @@ public sealed class OAuthClientTests
         { "access_token": "acc-tok", "refresh_token": "ref-tok",
           "token_type": "Bearer", "expires_in": 3600 }
         """;
+
+    // -------------------------------------------------------------------------
+    // ValidateState
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ValidateState_ReturnsTrue_WhenValuesMatch()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        client.ValidateState("csrf-token-abc", "csrf-token-abc").Should().BeTrue();
+    }
+
+    [Fact]
+    public void ValidateState_ReturnsFalse_WhenValuesDiffer()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        client.ValidateState("csrf-token-abc", "csrf-token-xyz").Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(null, "state")]
+    [InlineData("state", null)]
+    [InlineData("", "state")]
+    [InlineData("state", "")]
+    [InlineData(null, null)]
+    public void ValidateState_ReturnsFalse_WhenEitherValueIsMissing(string? expected, string? actual)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        client.ValidateState(expected, actual).Should().BeFalse();
+    }
 
     // -------------------------------------------------------------------------
     // BuildAuthorizationUrl
@@ -92,6 +126,37 @@ public sealed class OAuthClientTests
         act.Should().Throw<ArgumentException>();
     }
 
+    [Fact]
+    public void BuildAuthorizationUrl_OmitsRequestedPermissions_WhenNotProvided()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var authRequest = client.BuildAuthorizationUrl();
+
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().NotContain("requested_permissions");
+    }
+
+    [Fact]
+    public void BuildAuthorizationUrl_AppendsRequestedPermissions_WhenProvided()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var authRequest = client.BuildAuthorizationUrl(requestedPermissions: ["highlights"]);
+
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().Contain("requested_permissions=highlights");
+    }
+
+    [Fact]
+    public void BuildAuthorizationUrl_AppendsEachRequestedPermission_AsRepeatedQueryParameter()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var authRequest = client.BuildAuthorizationUrl(requestedPermissions: ["highlights", "other"]);
+
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().Contain("requested_permissions=highlights");
+        authRequest.AuthorizationUrl.AbsoluteUri.Should().Contain("requested_permissions=other");
+    }
+
     // -------------------------------------------------------------------------
     // ExchangeCodeAsync
     // -------------------------------------------------------------------------
@@ -150,6 +215,204 @@ public sealed class OAuthClientTests
     {
         var client = BuildClient(HttpStatusCode.OK, TokenJson);
         var act = () => client.ExchangeCodeAsync("auth-code", codeVerifier);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    // -------------------------------------------------------------------------
+    // CompleteIdentityCallbackAsync (OAuth Shape A: browser/public client)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ReturnsToken_OnTwoHopSuccess()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var tokenProvider = new FakeTokenProvider();
+        var client = BuildClientFromSequencedHandler(handler, tokenProvider);
+
+        var token = await client.CompleteIdentityCallbackAsync(
+            "state-abc", "yvp-123", "Kevin", "kevin@example.com", "https://img/pic.png", "verifier");
+
+        token.AccessToken.Should().Be("acc-tok");
+        token.RefreshToken.Should().Be("ref-tok");
+        token.ExpiresIn.Should().Be(3600);
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_StoresToken_IncludingReceivedAt_OnTwoHopSuccess()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var tokenProvider = new FakeTokenProvider();
+        var client = BuildClientFromSequencedHandler(handler, tokenProvider);
+
+        var before = DateTimeOffset.UtcNow;
+        await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+        var after = DateTimeOffset.UtcNow;
+
+        var stored = await tokenProvider.GetTokenAsync();
+        stored.Should().NotBeNull();
+        stored!.AccessToken.Should().Be("acc-tok");
+        stored.ReceivedAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_SendsStateAndYvpId_OnFirstHop()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        handler.Requests.Should().HaveCount(2);
+        handler.Requests[0].Method.Should().Be(HttpMethod.Get);
+        handler.Requests[0].RequestUri!.Query.Should().Contain("state=state-abc").And.Contain("yvp_id=yvp-123");
+        handler.Requests[1].RequestUri!.Should().Be(new Uri("https://auth.youversion.com/oauth2/token"));
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_OmitsOptionalIdentityFields_WhenNull()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        var query = handler.Requests[0].RequestUri!.Query;
+        query.Should().NotContain("user_name");
+        query.Should().NotContain("user_email");
+        query.Should().NotContain("profile_picture");
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_IncludesOptionalIdentityFields_WhenProvided()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        await client.CompleteIdentityCallbackAsync(
+            "state-abc", "yvp-123", "Kevin", "kevin@example.com", "https://img/pic.png", "verifier");
+
+        var query = handler.Requests[0].RequestUri!.Query;
+        query.Should().Contain("user_name=Kevin");
+        query.Should().Contain("user_email=kevin%40example.com");
+        query.Should().Contain("profile_picture=");
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionApiException_WhenNoLocationHeaderReturned()
+    {
+        var noLocationResponse = new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent("upstream error", Encoding.UTF8, "text/plain")
+        };
+        var handler = new SequencedHttpMessageHandler(noLocationResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.BadGateway);
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionEmptyResponseException_WhenCodeMissingFromLocation()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?other=value");
+        var handler = new SequencedHttpMessageHandler(identityRedirect);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        await act.Should().ThrowAsync<YouVersionEmptyResponseException>();
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionEmptyResponseException_WhenCodeIsBlankInLocation()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=");
+        var handler = new SequencedHttpMessageHandler(identityRedirect);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        await act.Should().ThrowAsync<YouVersionEmptyResponseException>();
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ResolvesRelativeLocationHeader_AgainstRequestUri()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("/auth/callback?code=auth-code-xyz", UriKind.Relative);
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var token = await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        token.AccessToken.Should().Be("acc-tok");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task CompleteIdentityCallbackAsync_ThrowsArgumentException_WhenStateIsInvalid(string state)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+        var act = () => client.CompleteIdentityCallbackAsync(state, "yvp-123", null, null, null, "verifier");
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task CompleteIdentityCallbackAsync_ThrowsArgumentException_WhenYvpIdIsInvalid(string yvpId)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", yvpId, null, null, null, "verifier");
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task CompleteIdentityCallbackAsync_ThrowsArgumentException_WhenCodeVerifierIsInvalid(string codeVerifier)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, codeVerifier);
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
@@ -246,6 +509,240 @@ public sealed class OAuthClientTests
 
         var stored = await tokenProvider.GetTokenAsync();
         stored.Should().BeNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // RequestPermissionsAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ReturnsDataExchangeToken_WhenApiSucceeds()
+    {
+        const string responseJson = """{ "token": "dx-tok", "token_type": "data_exchange", "expires_in": 300 }""";
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClient(HttpStatusCode.Created, responseJson, tokenProvider);
+
+        var result = await client.RequestPermissionsAsync(["highlights"]);
+
+        result.Token.Should().Be("dx-tok");
+        result.TokenType.Should().Be("data_exchange");
+        result.ExpiresIn.Should().Be(300);
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_SendsStoredAccessTokenAsBearerAndPermissionsInBody()
+    {
+        const string responseJson = """{ "token": "dx-tok", "token_type": "data_exchange", "expires_in": 300 }""";
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, responseJson);
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClientFromHandler(handler, tokenProvider);
+
+        await client.RequestPermissionsAsync(["highlights"]);
+
+        handler.LastRequest!.Method.Should().Be(HttpMethod.Post);
+        handler.LastRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
+        handler.LastRequest.Headers.Authorization!.Parameter.Should().Be("acc-tok");
+        handler.LastRequest.RequestUri!.Query.Should().Contain("x-yvp-app-key=test-app-key");
+        handler.LastRequestBody.Should().Contain("\"requested_permissions\"").And.Contain("highlights");
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ThrowsInvalidOperationException_WhenNoTokenStored()
+    {
+        const string responseJson = """{ "token": "dx-tok", "token_type": "data_exchange", "expires_in": 300 }""";
+        var client = BuildClient(HttpStatusCode.Created, responseJson, new FakeTokenProvider(initial: null));
+
+        var act = () => client.RequestPermissionsAsync(["highlights"]);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*sign in*");
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ThrowsArgumentException_WhenPermissionsIsEmpty()
+    {
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClient(HttpStatusCode.Created, "{}", tokenProvider);
+
+        var act = () => client.RequestPermissionsAsync([]);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task RequestPermissionsAsync_ThrowsYouVersionApiException_OnError()
+    {
+        var tokenProvider = new FakeTokenProvider(MakeStoredToken());
+        var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""", tokenProvider);
+
+        var act = () => client.RequestPermissionsAsync(["highlights"]);
+
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
+    }
+
+    // -------------------------------------------------------------------------
+    // BuildDataExchangeApprovalUrl
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void BuildDataExchangeApprovalUrl_ReturnsUrlWithTokenAndAppKeyQueryParameters()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var url = client.BuildDataExchangeApprovalUrl("dx-tok");
+
+        url.AbsoluteUri.Should().Be("https://api.youversion.com/data-exchange?token=dx-tok&x-yvp-app-key=test-app-key");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void BuildDataExchangeApprovalUrl_ThrowsArgumentException_WhenTokenIsInvalid(string token)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var act = () => client.BuildDataExchangeApprovalUrl(token);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void BuildDataExchangeApprovalUrl_ThrowsInvalidOperationException_WhenAppKeyNotConfigured()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson, appKey: "");
+
+        var act = () => client.BuildDataExchangeApprovalUrl("dx-tok");
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*AppKey*");
+    }
+
+    // -------------------------------------------------------------------------
+    // ParseDataExchangeCallback
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsGranted_WithPermissions()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(
+            new Uri("https://myapp.com/?data_exchange_status=granted&granted_permissions=highlights"));
+
+        result.Status.Should().Be(DataExchangeStatus.Granted);
+        result.GrantedPermissions.Should().ContainSingle().Which.Should().Be("highlights");
+        result.DeniedPermissions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsCancelled_WithDeniedPermissionsAndError()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri(
+            "https://myapp.com/?data_exchange_status=cancelled&denied_permissions=highlights&error=access_denied"));
+
+        result.Status.Should().Be(DataExchangeStatus.Cancelled);
+        result.DeniedPermissions.Should().ContainSingle().Which.Should().Be("highlights");
+        result.Error.Should().Be("access_denied");
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsError_WithErrorDescription()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri(
+            "https://myapp.com/?data_exchange_status=error&error=server_error&error_description=Something%20went%20wrong"));
+
+        result.Status.Should().Be(DataExchangeStatus.Error);
+        result.Error.Should().Be("server_error");
+        result.ErrorDescription.Should().Be("Something went wrong");
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_ReturnsUnknown_WhenStatusMissing()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri("https://myapp.com/"));
+
+        result.Status.Should().Be(DataExchangeStatus.Unknown);
+    }
+
+    [Fact]
+    public void ParseDataExchangeCallback_SplitsCommaSeparatedPermissions()
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+
+        var result = client.ParseDataExchangeCallback(new Uri(
+            "https://myapp.com/?data_exchange_status=granted&granted_permissions=highlights,bookmarks"));
+
+        result.GrantedPermissions.Should().BeEquivalentTo(["highlights", "bookmarks"]);
+    }
+
+    // -------------------------------------------------------------------------
+    // CompleteDataExchangeApprovalAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ReturnsParsedResult_OnSeeOtherResponse()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.SeeOther, "", response =>
+            response.Headers.Location = new Uri("https://myapp.com/?data_exchange_status=granted&granted_permissions=highlights"));
+        var client = BuildClientFromHandler(handler);
+
+        var result = await client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        result.Status.Should().Be(DataExchangeStatus.Granted);
+        result.GrantedPermissions.Should().ContainSingle().Which.Should().Be("highlights");
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_SendsTokenAndAppKeyQueryParametersWithNoBody()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.SeeOther, "", response =>
+            response.Headers.Location = new Uri("https://myapp.com/?data_exchange_status=granted"));
+        var client = BuildClientFromHandler(handler);
+
+        await client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        handler.LastRequest!.Method.Should().Be(HttpMethod.Post);
+        handler.LastRequest.Headers.Authorization.Should().BeNull();
+        handler.LastRequest.RequestUri!.Query.Should().Contain("token=dx-tok").And.Contain("x-yvp-app-key=test-app-key");
+        handler.LastRequestBody.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsInvalidOperationException_WhenAppKeyNotConfigured()
+    {
+        var client = BuildClient(HttpStatusCode.SeeOther, "", appKey: null);
+
+        var act = () => client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*AppKey*");
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsArgumentException_WhenTokenIsEmpty()
+    {
+        var client = BuildClient(HttpStatusCode.SeeOther, "");
+
+        var act = () => client.CompleteDataExchangeApprovalAsync("");
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsYouVersionApiException_WhenResponseIsNotSeeOther()
+    {
+        var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""");
+
+        var act = () => client.CompleteDataExchangeApprovalAsync("dx-tok");
+
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
     }
 
     // -------------------------------------------------------------------------
@@ -354,7 +851,8 @@ public sealed class OAuthClientTests
     private static YouVersionOAuthClient BuildClient(
         HttpStatusCode status,
         string json,
-        FakeTokenProvider? tokenProvider = null)
+        FakeTokenProvider? tokenProvider = null,
+        string? appKey = "test-app-key")
     {
         var handler = new FakeHttpMessageHandler(status, json);
         var httpClient = new HttpClient(handler)
@@ -368,12 +866,67 @@ public sealed class OAuthClientTests
             AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
+        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
         return new YouVersionOAuthClient(
             httpClient,
             options,
+            apiOptions,
             tokenProvider ?? new FakeTokenProvider(),
             NullLogger<YouVersionOAuthClient>.Instance);
     }
+
+    private static YouVersionOAuthClient BuildClientFromHandler(
+        FakeHttpMessageHandler handler,
+        FakeTokenProvider? tokenProvider = null,
+        string? appKey = "test-app-key")
+    {
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
+        var options = Options.Create(new YouVersionOAuthOptions
+        {
+            ClientId = "test-client",
+            RedirectUri = new Uri("https://localhost/callback"),
+            AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
+            TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
+        });
+        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
+        return new YouVersionOAuthClient(
+            httpClient,
+            options,
+            apiOptions,
+            tokenProvider ?? new FakeTokenProvider(),
+            NullLogger<YouVersionOAuthClient>.Instance);
+    }
+
+    private static YouVersionOAuthClient BuildClientFromSequencedHandler(
+        SequencedHttpMessageHandler handler,
+        FakeTokenProvider? tokenProvider = null,
+        string? appKey = "test-app-key")
+    {
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
+        var options = Options.Create(new YouVersionOAuthOptions
+        {
+            ClientId = "test-client",
+            RedirectUri = new Uri("https://localhost/callback"),
+            AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
+            AuthCallbackEndpoint = new Uri("https://auth.youversion.com/auth/callback"),
+            TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
+        });
+        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
+        return new YouVersionOAuthClient(
+            httpClient,
+            options,
+            apiOptions,
+            tokenProvider ?? new FakeTokenProvider(),
+            NullLogger<YouVersionOAuthClient>.Instance);
+    }
+
+    private static OAuthTokenResponse MakeStoredToken() => new()
+    {
+        AccessToken = "acc-tok",
+        RefreshToken = "ref-tok",
+        ExpiresIn = 3600,
+        ReceivedAt = DateTimeOffset.UtcNow,
+    };
 
     private static string BuildUnsignedJwt(string claimName, string claimValue)
     {

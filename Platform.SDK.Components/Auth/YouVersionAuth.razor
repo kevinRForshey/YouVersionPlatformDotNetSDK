@@ -1,0 +1,14 @@
+@if (_isSignedIn)
+{
+    <span class="@UsernameCssClass">@_userName</span>
+    <button class="@ButtonCssClass" @onclick="SignOutAsync">Sign out</button>
+}
+else
+{
+    <button class="@ButtonCssClass" @onclick="SignInAsync">Sign in</button>
+}
+
+@if (OAuthError is not null)
+{
+    <div class="alert alert-danger mt-2 mb-0 py-2" role="alert">@OAuthError</div>
+}

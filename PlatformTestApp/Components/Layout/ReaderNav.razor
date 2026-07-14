@@ -1,0 +1,16 @@
+@using Microsoft.AspNetCore.Components.Routing
+
+<nav class="yv-nav" aria-label="SDK demo navigation">
+    <div class="yv-nav-brand">
+        <span class="yv-nav-glyph" aria-hidden="true">✦</span>
+        <span>YouVersion Platform SDK Demo Application</span>
+    </div>
+    <div class="yv-nav-links">
+        <NavLink href="/" Match="NavLinkMatch.All" class="yv-nav-link" ActiveClass="yv-nav-link--active">
+            <span class="yv-nav-pill">Pre-built Reader</span>
+        </NavLink>
+        <NavLink href="/custom-reader" class="yv-nav-link" ActiveClass="yv-nav-link--active">
+            <span class="yv-nav-pill">Custom Builder</span>
+        </NavLink>
+    </div>
+</nav>

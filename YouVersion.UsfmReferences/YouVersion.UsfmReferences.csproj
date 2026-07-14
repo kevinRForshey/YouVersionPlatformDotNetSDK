@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- ============================ NuGet package metadata ============================ -->
+  <PropertyGroup>
+    <!-- Versioned independently of the MinVer-driven Platform.* packages: this is a
+         standalone port tracking the upstream youversion/usfm-references release number. -->
+    <MinVerSkip>true</MinVerSkip>
+    <PackageId>YouVersion.UsfmReferences</PackageId>
+    <Version>3.1.1</Version>
+
+    <Title>YouVersion USFM References</Title>
+    <Authors>Kevin Forshey</Authors>
+    <Product>YouVersion.UsfmReferences</Product>
+    <Description>Parsing, validation, and conversion utilities for USFM (Unified Standard Format Markers) scripture references. An unofficial C# port of the youversion/usfm-references Python library; not affiliated with or endorsed by YouVersion.</Description>
+    <PackageTags>usfm;bible;scripture;reference;youversion;parsing;validation;canon</PackageTags>
+    <Copyright>Copyright © 2026 Kevin Forshey</Copyright>
+
+    <!-- License: MIT, consistent with the upstream project. -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!-- README shown on the nuget.org package page. -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <PackageReleaseNotes>Initial .NET release. Feature-equivalent port of usfm-references 3.1.1.</PackageReleaseNotes>
+
+    <!-- Optional package icon: drop an icon.png next to this file and uncomment.
+    <PackageIcon>icon.png</PackageIcon>
+    -->
+  </PropertyGroup>
+
+  <!-- ===================== Build reproducibility & source debugging ===================== -->
+  <PropertyGroup>
+    <!-- Ship a .snupkg symbol package so consumers can step into the source. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- SourceLink ships in the .NET 8+ SDK; no extra PackageReference needed. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <!-- Pack the solution-level README into the package root. -->
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

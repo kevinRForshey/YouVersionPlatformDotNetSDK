@@ -1,113 +1,82 @@
-﻿@page "/"
+@page "/"
+@using Platform.API.OAuth
 @using Platform.SDK.Components.BibleComponents
-@using Platform.SDK.Services;
+@using PlatformTestApp.Auth
 @rendermode InteractiveServer
+@inject HighlightsPermissionStore PermissionStore
 @inject ITokenProvider TokenProvider
-@inject IBibleReaderStateService State
 @inject NavigationManager Nav
-@inject Microsoft.Extensions.Hosting.IHostEnvironment HostEnvironment
-@implements IDisposable
 
 <PageTitle>YouVersion Bible Reader</PageTitle>
 
 <div class="bible-reader-page">
-
-    @* ── Login banner ─────────────────────────────────────────────────── *@
-    <div class="bible-reader-header d-flex align-items-center justify-content-between mb-4">
-        <h2 class="mb-0">
-            <span class="yv-logo-icon" aria-hidden="true">✝</span> Bible Reader
-        </h2>
-        <div class="auth-status">
-            @if (OAuthError is not null)
-            {
-                <span class="me-2 text-danger small">@OAuthError</span>
-            }
-            @if (_isSignedIn)
-            {
-                <span class="me-3 text-muted small">
-                    You are logged in as: <strong>@(_userName ?? "YouVersion User")</strong>
-                </span>
-                <FluentButton Appearance="Appearance.Accent" @onclick="SignOut">Sign out</FluentButton>
-            }
-            else
-            {
-                <FluentButton Appearance="Appearance.Lightweight" @onclick="SignIn">Sign in with YouVersion</FluentButton>
-            }
-        </div>
-    </div>
-
-  @*   @if (HostEnvironment.IsDevelopment())
+    @if (HighlightsStatus == "denied")
     {
-        <div class="alert alert-secondary py-2 px-3 mb-3 small">
-            <strong>Auth debug</strong>
-            <span class="ms-2">Token: <code>@(_debugTokenPresent ? "present" : "absent")</code></span>
-            <span class="ms-2">Identity: <code>@(_debugIdentity ?? "(none)")</code></span>
-            <span class="ms-2">Callback mode: <code>@(AuthMode ?? "(none)")</code></span>
-            <button class="btn btn-sm btn-outline-secondary ms-3" @onclick="ClearAuthDebugState">
-                Clear auth
-            </button>
+        <div class="alert alert-warning">Highlights access was not granted, so verse highlighting is unavailable.</div>
+    }
+    @if (_isSignedIn && !_highlightsEnabled)
+    {
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>Sign-in doesn't request highlights access by itself &mdash; grant it separately to enable verse highlighting.</span>
+            <button class="read-passage-button" @onclick="RequestHighlightsAsync">Grant highlights access</button>
         </div>
-    } *@
-    <BibleReader/>
+    }
+    <BibleReader OAuthError="@OAuthError" EnableHighlighting="@_highlightsEnabled" />
 </div>
 
-   
-
 @code {
-    // Populated when the OAuth callback redirects with ?oauth_error=...
     [SupplyParameterFromQuery(Name = "oauth_error")]
     public string? OAuthError { get; set; }
 
     [SupplyParameterFromQuery(Name = "auth_mode")]
     public string? AuthMode { get; set; }
 
-    private PassageDisplay? _passageDisplay;
+    // Only present on the single redirect immediately following an OAuth/Data Exchange callback.
+    // On every other page load this is null, so the persisted HighlightsPermissionStore is the
+    // source of truth for whether highlighting stays enabled across reloads and revisits.
+    [SupplyParameterFromQuery(Name = "highlights")]
+    public string? HighlightsStatus { get; set; }
+
+    private bool _highlightsEnabled;
     private bool _isSignedIn;
-    private string? _userName;
-    private bool _debugTokenPresent;
-    private string? _debugIdentity;
-    private string? _copyright;
 
     protected override async Task OnInitializedAsync()
     {
-        State.OnStateChanged += OnStateChangedHandler;
-        await CheckSignInAsync();
+        _highlightsEnabled = HighlightsStatus switch
+        {
+            "granted" => true,
+            "denied" => false,
+            _ => await PermissionStore.GetGrantedAsync()
+        };
+        _isSignedIn = await CheckSignedInAsync();
     }
 
-    // Re-check sign-in state on the first interactive render so the circuit always
-    // reflects the token stored during the OAuth callback, even if the prerender and
-    // circuit DI scopes briefly disagree.
+    // Re-check after first interactive render — a permission grant or token persisted during the
+    // OAuth callback round-trip may not be visible in the SSR prerender scope OnInitializedAsync
+    // ran in (same caveat VerseComponent handles for its own sign-in check).
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-            await CheckSignInAsync();
+        if (!firstRender) return;
+
+        var signedIn = await CheckSignedInAsync();
+        var granted = HighlightsStatus is null ? await PermissionStore.GetGrantedAsync() : _highlightsEnabled;
+
+        if (signedIn == _isSignedIn && granted == _highlightsEnabled) return;
+
+        _isSignedIn = signedIn;
+        _highlightsEnabled = granted;
+        StateHasChanged();
     }
 
-    private async Task CheckSignInAsync()
+    private async Task<bool> CheckSignedInAsync()
     {
         var token = await TokenProvider.GetTokenAsync();
-        var signedIn = token is not null && !token.IsExpired();
-        var userName = token?.GetDisplayIdentity();
-        var tokenPresent = token is not null;
-
-        if (signedIn != _isSignedIn || userName != _userName || tokenPresent != _debugTokenPresent)
-        {
-            _isSignedIn = signedIn;
-            _userName   = userName;
-            _debugTokenPresent = tokenPresent;
-            _debugIdentity = userName;
-            StateHasChanged();
-        }
+        return token is not null && !token.IsExpired();
     }
 
-    private void SignIn() => Nav.NavigateTo("/auth/login", forceLoad: true);
-    private void SignOut() => Nav.NavigateTo("/auth/logout", forceLoad: true);
-    private void ClearAuthDebugState() => Nav.NavigateTo("/auth/logout", forceLoad: true);
-
-    private void OnStateChangedHandler()
-        => InvokeAsync(StateHasChanged);
-
-    public void Dispose()
-        => State.OnStateChanged -= OnStateChangedHandler;
+    // A plain <a href> here gets swallowed by Blazor's enhanced navigation, which fetches the
+    // response and tries to diff it into the page instead of following the server redirect to
+    // YouVersion's off-site approval page. forceLoad: true bypasses that, same as YouVersionAuth's
+    // sign-in/out buttons.
+    private void RequestHighlightsAsync() => Nav.NavigateTo("/auth/request-highlights", forceLoad: true);
 }
-

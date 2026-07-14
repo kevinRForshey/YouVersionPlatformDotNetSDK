@@ -1,11 +1,16 @@
-using System;
+using System.Net.Http;
+
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+
 using Platform.API.Clients;
 using Platform.API.Configuration;
 using Platform.API.Http;
 using Platform.API.OAuth;
+
+using YouVersion.UsfmReferences;
 
 namespace Platform.API.Extensions;
 
@@ -15,6 +20,18 @@ namespace Platform.API.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// The named-HttpClient registration name used for <see cref="HighlightClient"/>'s pipeline.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AddYouVersionOAuth"/> appends <see cref="OAuthBearerTokenHandler"/> onto this same
+    /// named client after <see cref="AddYouVersionApiClients(IServiceCollection, Action{Configuration.YouVersionApiOptions})"/>
+    /// has registered it. Both call sites reference this single constant instead of independently
+    /// deriving <c>typeof(HighlightClient).Name</c>, so a rename of <see cref="HighlightClient"/> can't
+    /// silently desynchronize the two registrations.
+    /// </remarks>
+    internal const string HighlightClientName = nameof(HighlightClient);
+
     /// <summary>
     /// Registers the YouVersion Platform API clients (<see cref="IBibleClient"/>,
     /// <see cref="IPassageClient"/>, and <see cref="IHighlightClient"/>) and their
@@ -48,10 +65,12 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AppKeyDelegatingHandler>();
         services.AddTransient<OutboundRateLimitingHandler>();
 
+        // Register USFM reference service as singleton (stateless, thread-safe)
+        services.TryAddSingleton<IUsfmReferenceService, UsfmReferenceService>();
+
         RegisterTypedClient<IBibleClient, BibleClient>(services);
         RegisterTypedClient<IPassageClient, PassageClient>(services);
-        RegisterTypedClient<IHighlightClient, HighlightClient>(services);
-
+        RegisterTypedClient<IHighlightClient, HighlightClient>(services, HighlightClientName);
         return services;
     }
 
@@ -85,9 +104,12 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AppKeyDelegatingHandler>();
         services.AddTransient<OutboundRateLimitingHandler>();
 
+        // Register USFM reference service as singleton (stateless, thread-safe)
+        services.TryAddSingleton<IUsfmReferenceService, UsfmReferenceService>();
+
         RegisterTypedClient<IBibleClient, BibleClient>(services);
         RegisterTypedClient<IPassageClient, PassageClient>(services);
-        RegisterTypedClient<IHighlightClient, HighlightClient>(services);
+        RegisterTypedClient<IHighlightClient, HighlightClient>(services, HighlightClientName);
 
         return services;
     }
@@ -105,7 +127,7 @@ public static class ServiceCollectionExtensions
     /// builder.Services.AddYouVersionApiClients(o => o.AppKey = "my-key")
     ///                 .AddYouVersionOAuth(o =>
     ///                 {
-    ///                     o.Scopes = "highlights";
+    ///                     o.Scopes = "openid profile email";
     ///                 });
     /// </code>
     /// </example>
@@ -133,15 +155,19 @@ public static class ServiceCollectionExtensions
         // OAuth HTTP client — no app key or bearer required on auth endpoints.
         // BaseAddress is intentionally not set; PostTokenRequestAsync uses the absolute
         // TokenEndpoint URI from YouVersionOAuthOptions directly.
+        // AllowAutoRedirect is disabled because CompleteDataExchangeApprovalAsync needs to read
+        // the `Location` header off a raw 303 response instead of having HttpClient silently
+        // follow it to the caller's own callback URL.
         services
             .AddHttpClient<IYouVersionOAuthClient, YouVersionOAuthClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .AddHttpMessageHandler<OutboundRateLimitingHandler>()
             .AddStandardResilienceHandler();
 
         // Append OAuthBearerTokenHandler to IHighlightClient's existing pipeline
         // (AppKeyDelegatingHandler was already added by AddYouVersionApiClients).
         // AddYouVersionApiClients MUST be called first.
-        services.AddHttpClient(typeof(IHighlightClient).Name)
+        services.AddHttpClient(HighlightClientName)
             .AddHttpMessageHandler<OAuthBearerTokenHandler>();
 
         return services;
@@ -151,23 +177,108 @@ public static class ServiceCollectionExtensions
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private static void RegisterTypedClient<TClient, TImplementation>(IServiceCollection services)
+    private static void RegisterTypedClient<TClient, TImplementation>(
+        IServiceCollection services,
+        string? httpClientName = null)
         where TClient : class
         where TImplementation : class, TClient
     {
-        services
-            .AddHttpClient<TClient, TImplementation>((serviceProvider, httpClient) =>
-            {
-                var options = serviceProvider
-                    .GetRequiredService<IOptions<YouVersionApiOptions>>()
-                    .Value;
+        void ConfigureClient(IServiceProvider serviceProvider, HttpClient httpClient)
+        {
+            var options = serviceProvider
+                .GetRequiredService<IOptions<YouVersionApiOptions>>()
+                .Value;
 
-                httpClient.BaseAddress = options.BaseAddress;
-                httpClient.Timeout = options.Timeout;
-            })
+            httpClient.BaseAddress = options.BaseAddress;
+            httpClient.Timeout = options.Timeout;
+        }
+
+        // Register the concrete implementation as its own typed HTTP client so it can be
+        // resolved directly by name (e.g. by caching decorators without creating a circular
+        // dependency through the interface). When httpClientName is supplied, the underlying
+        // named-client registration uses that explicit name instead of the framework's implicit
+        // typeof(TImplementation).Name convention, so other code (e.g. AddYouVersionOAuth) can
+        // reference the same named pipeline via a shared constant rather than re-deriving it.
+        var builder = httpClientName is null
+            ? services.AddHttpClient<TImplementation>(ConfigureClient)
+            : services.AddHttpClient<TImplementation>(httpClientName, ConfigureClient);
+
+        builder
             .AddHttpMessageHandler<AppKeyDelegatingHandler>()
             .AddHttpMessageHandler<OutboundRateLimitingHandler>()
             .AddStandardResilienceHandler();
+
+        // Forward the public interface to the concrete implementation.
+        // AddYouVersionCaching() replaces this registration with a caching decorator.
+        services.AddTransient<TClient>(sp => sp.GetRequiredService<TImplementation>());
+    }
+
+    /// <summary>
+    /// Wraps <see cref="IBibleClient"/> and <see cref="IPassageClient"/> with caching decorators
+    /// backed by <see cref="HybridCache"/> (L1 in-process memory + optional L2 distributed cache).
+    /// Must be called after <see cref="AddYouVersionApiClients(IServiceCollection, Action{YouVersionApiOptions})"/>.
+    /// </summary>
+    /// <param name="services">The DI service collection.</param>
+    /// <param name="configureOptions">
+    /// Optional delegate to customize per-data-type TTLs. When omitted, defaults are
+    /// 24 h for version/book data and 7 days for passage content.
+    /// </param>
+    /// <remarks>
+    /// To add a distributed (L2) cache, register an <c>IDistributedCache</c> implementation
+    /// (e.g. <c>AddStackExchangeRedisCache</c>) before or after calling this method.
+    /// <see cref="HybridCache"/> will detect it automatically and use it as the L2 tier.
+    /// </remarks>
+    /// <returns>The original <paramref name="services"/> for chaining.</returns>
+    public static IServiceCollection AddYouVersionCaching(
+        this IServiceCollection services,
+        Action<YouVersionCacheOptions>? configureOptions = null)
+    {
+        if (!HasApiClientRegistration(services))
+            throw new InvalidOperationException(
+                "AddYouVersionApiClients must be called before AddYouVersionCaching.");
+
+        var opts = new YouVersionCacheOptions();
+        configureOptions?.Invoke(opts);
+        services.AddSingleton(opts);
+
+        // ── Redis L2 ────────────────────────────────────────────────────────
+        // Register Redis before HybridCache so HybridCache discovers it as L2.
+        // Skipped when no connection string is provided — L1-only mode.
+        if (!string.IsNullOrWhiteSpace(opts.RedisConnectionString))
+        {
+            services.AddStackExchangeRedisCache(o =>
+                o.Configuration = opts.RedisConnectionString);
+        }
+
+        // ── In-process L1 ───────────────────────────────────────────────────
+        // SizeLimit enables LRU eviction so the process cache doesn't grow without bound.
+        if (opts.MaxL1Entries.HasValue)
+            services.AddMemoryCache(o => o.SizeLimit = opts.MaxL1Entries.Value);
+        else
+            services.AddMemoryCache();
+
+        // ── HybridCache ─────────────────────────────────────────────────────
+        // Automatically uses the registered IDistributedCache (Redis) as L2 when present.
+        // MaximumPayloadBytes prevents a single oversized response from filling L1 —
+        // the value is still returned to the caller but not written to either tier.
+        services.AddHybridCache(o => o.MaximumPayloadBytes = 4 * 1024 * 1024); // 4 MB
+
+        // Replace the plain interface → implementation forward with caching decorators.
+        // The underlying BibleClient/PassageClient typed HTTP clients remain registered and
+        // are resolved directly by the decorators to avoid circular dependency.
+        services.Replace(ServiceDescriptor.Transient<IBibleClient>(sp =>
+            new CachingBibleClient(
+                sp.GetRequiredService<BibleClient>(),
+                sp.GetRequiredService<HybridCache>(),
+                sp.GetRequiredService<YouVersionCacheOptions>())));
+
+        services.Replace(ServiceDescriptor.Transient<IPassageClient>(sp =>
+            new CachingPassageClient(
+                sp.GetRequiredService<PassageClient>(),
+                sp.GetRequiredService<HybridCache>(),
+                sp.GetRequiredService<YouVersionCacheOptions>())));
+
+        return services;
     }
 
     private static bool HasApiClientRegistration(IServiceCollection services)

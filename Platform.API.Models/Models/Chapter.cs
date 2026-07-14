@@ -8,7 +8,6 @@ namespace Platform.API.Models;
 public sealed record Chapter
 {
     /// <summary>Gets the USFM chapter identifier (e.g. <c>GEN.1</c>).</summary>
-    /// <value>The USFM chapter identifier.</value>
     [JsonPropertyName("usfm")]
     public string Usfm { get; init; } = string.Empty;
 

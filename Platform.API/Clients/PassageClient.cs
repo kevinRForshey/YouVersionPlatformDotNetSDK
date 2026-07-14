@@ -1,43 +1,51 @@
-using System.Text;
+// Ignore Spelling: usfm
+
 using Microsoft.Extensions.Logging;
+
 using Platform.API.Exceptions;
 using Platform.API.Http;
 using Platform.API.Models;
+
+using System.Text;
+
+using YouVersion.UsfmReferences;
 
 namespace Platform.API.Clients;
 
 /// <summary>
 /// Default implementation of <see cref="IPassageClient"/> backed by the YouVersion Platform REST API.
+/// Requires all USFM references to be provided as typed <see cref="Reference"/> objects for validation.
 /// </summary>
-internal sealed partial class PassageClient(HttpClient httpClient, ILogger<PassageClient> logger) : IPassageClient
+internal sealed partial class PassageClient(
+    HttpClient httpClient,
+    ILogger<PassageClient> logger,
+    IUsfmReferenceService usfmReferenceService) : IPassageClient
 {
-
+    private readonly IUsfmReferenceService _usfmReferenceService = usfmReferenceService;
     /// <inheritdoc />
     public async Task<Passage> GetPassageAsync(
         int versionId,
-        string usfm,
+        Reference usfm,
         PassageRequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         if (versionId <= 0)
             throw new ArgumentOutOfRangeException(nameof(versionId), versionId, "Version id must be greater than zero.");
 
-        if (string.IsNullOrWhiteSpace(usfm))
-            throw new ArgumentException("USFM passage id is required.", nameof(usfm));
-
         var resolvedOptions = options ?? PassageRequestOptions.Default;
-        var url = BuildPassageUrl(versionId, usfm, resolvedOptions);
+        var normalizedUsfm = usfm.ToString();
+        var url = BuildPassageUrl(versionId, normalizedUsfm, resolvedOptions);
 
-        logger.LogDebug("Fetching passage {Usfm} from version {VersionId} (format={Format}).", usfm, versionId, resolvedOptions.Format);
+        logger.LogDebug("Fetching passage {Usfm} from version {VersionId} (format={Format}).",
+            normalizedUsfm, versionId, resolvedOptions.Format);
 
         var passage = await ApiRequestHelper.GetJsonAsync<Passage>(httpClient, url, logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var result = passage ?? throw new YouVersionApiException(
-            System.Net.HttpStatusCode.OK,
-            $"The API returned an empty body for passage '{usfm}' (version {versionId}).");
+        var result = passage ?? throw new YouVersionEmptyResponseException(
+            $"The API returned an empty body for passage '{normalizedUsfm}' (version {versionId}).");
 
-        logger.LogDebug("Fetched passage {Usfm} from version {VersionId}.", usfm, versionId);
+        logger.LogDebug("Fetched passage {Usfm} from version {VersionId}.", normalizedUsfm, versionId);
         return result;
     }
 

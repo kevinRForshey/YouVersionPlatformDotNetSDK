@@ -8,7 +8,11 @@ namespace Platform.API.Models;
 public sealed record Book
 {
     /// <summary>Gets the USFM book code (e.g. <c>GEN</c>, <c>MAT</c>, <c>REV</c>).</summary>
-    /// <value>The USFM book code for this book.</value>
+    /// <remarks>
+    /// This is a normalized, validated USFM book code from the YouVersion Platform API.
+    /// All USFM references passed to passage and highlight operations are validated against
+    /// YouVersion.UsfmReferences.BookCatalog before being sent to the API.
+    /// </remarks>
     [JsonPropertyName("usfm")]
     public string Usfm { get; init; } = string.Empty;
 

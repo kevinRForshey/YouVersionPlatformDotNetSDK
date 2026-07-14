@@ -8,14 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Platform.API.Models\Platform.API.Models.csproj" />
-    <ProjectReference Include="..\Platform.API\Platform.API.csproj" />
-    <ProjectReference Include="..\Platform.SDK.Components\Platform.SDK.Components.csproj" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.2" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.14.2" />
+    <ProjectReference Include="..\Platform.SDK.Components\Platform.SDK.Components.csproj" />
   </ItemGroup>
 
 </Project>

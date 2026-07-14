@@ -1,4 +1,5 @@
 using Platform.API.Models;
+using YouVersion.UsfmReferences;
 
 namespace Platform.API.Clients;
 
@@ -12,12 +13,22 @@ namespace Platform.API.Clients;
 public interface IHighlightReader
 {
     /// <summary>
-    /// Returns a paginated list of highlights for the authenticated user.
+    /// Returns the highlights within a passage. Passing a whole-chapter reference returns one
+    /// entry per highlighted verse in that chapter.
     /// </summary>
-    /// <param name="pageToken">Opaque continuation token, or <see langword="null"/> for the first page.</param>
+    /// <param name="bibleId">The numeric Bible version id.</param>
+    /// <param name="passage">The USFM passage to look up highlights within (e.g. a chapter or a single verse).</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>A paged result of <see cref="Highlight"/> items.</returns>
-    Task<PagedResult<Highlight>> GetHighlightsAsync(
-        string? pageToken = null,
+    /// <returns>The highlights found within <paramref name="passage"/>.</returns>
+    Task<IReadOnlyList<Highlight>> GetHighlightsAsync(
+        int bibleId,
+        Reference passage,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the colors the current user has most recently used for highlights.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>Recently used highlight colors as hex strings (e.g. <c>44aa44</c>).</returns>
+    Task<IReadOnlyList<string>> GetRecentColorsAsync(CancellationToken cancellationToken = default);
 }
