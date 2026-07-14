@@ -28,7 +28,7 @@ and usage details.
 | If you want to... | Install |
 |---|---|
 | Call the Platform API directly (versions, passages, highlights) from a backend, console app, Azure Function, etc. — no UI | `YouVersion.Platform.API.Models` + `YouVersion.Platform.API` |
-| Sign users in via OAuth/PKCE and call the API on their behalf, still with no UI | Same as above — OAuth lives in `Platform.API`. See [`Platform.API/README.md`](Platform.API/README.md) and the [OAuth/PKCE guide](docs/oauth-guide.md). |
+| Sign users in via OAuth/PKCE and call the API on their behalf, still with no UI | Same as above — OAuth lives in `Platform.API`. See [`Platform.API/README.md`](Platform.API/README.md) and the [OAuth/PKCE guide](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/oauth-guide.md). |
 | Build your own UI (not Blazor, or a custom Blazor UI) on top of ready-made business logic (highlight toggling, reader state, etc.) instead of raw HTTP calls | Add `YouVersion.Platform.SDK.Services` |
 | Build a Blazor app and want ready-made UI — pickers, `BibleReader`, click-to-highlight, the `YouVersionAuth` sign-in widget | `YouVersion.Platform.SDK.Components` (pulls in `Services`, `API`, and `Models` transitively — just install this one) |
 | Parse or validate USFM scripture references, unrelated to the Platform API | `YouVersion.UsfmReferences` only |

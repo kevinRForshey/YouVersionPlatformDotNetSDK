@@ -22,7 +22,7 @@ Add package references as needed:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="YouVersion.Platform.API" Version="1.0.0" />
+  <PackageReference Include="YouVersion.Platform.API" Version="0.1.0" />
 </ItemGroup>
 ```
 
@@ -307,9 +307,9 @@ Blazor Server prerender into the live interactive circuit.
 
 ## Additional docs
 
-- [Getting started](../docs/getting-started.md)
-- [Authentication (app key)](../docs/authentication.md)
-- [OAuth guide](../docs/oauth-guide.md)
+- [Getting started](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/getting-started.md)
+- [Authentication (app key)](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/authentication.md)
+- [OAuth guide](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/oauth-guide.md)
 
 ## Build and pack
 
