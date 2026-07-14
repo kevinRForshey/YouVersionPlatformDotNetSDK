@@ -219,6 +219,204 @@ public sealed class OAuthClientTests
     }
 
     // -------------------------------------------------------------------------
+    // CompleteIdentityCallbackAsync (OAuth Shape A: browser/public client)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ReturnsToken_OnTwoHopSuccess()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var tokenProvider = new FakeTokenProvider();
+        var client = BuildClientFromSequencedHandler(handler, tokenProvider);
+
+        var token = await client.CompleteIdentityCallbackAsync(
+            "state-abc", "yvp-123", "Kevin", "kevin@example.com", "https://img/pic.png", "verifier");
+
+        token.AccessToken.Should().Be("acc-tok");
+        token.RefreshToken.Should().Be("ref-tok");
+        token.ExpiresIn.Should().Be(3600);
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_StoresToken_IncludingReceivedAt_OnTwoHopSuccess()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var tokenProvider = new FakeTokenProvider();
+        var client = BuildClientFromSequencedHandler(handler, tokenProvider);
+
+        var before = DateTimeOffset.UtcNow;
+        await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+        var after = DateTimeOffset.UtcNow;
+
+        var stored = await tokenProvider.GetTokenAsync();
+        stored.Should().NotBeNull();
+        stored!.AccessToken.Should().Be("acc-tok");
+        stored.ReceivedAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_SendsStateAndYvpId_OnFirstHop()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        handler.Requests.Should().HaveCount(2);
+        handler.Requests[0].Method.Should().Be(HttpMethod.Get);
+        handler.Requests[0].RequestUri!.Query.Should().Contain("state=state-abc").And.Contain("yvp_id=yvp-123");
+        handler.Requests[1].RequestUri!.Should().Be(new Uri("https://auth.youversion.com/oauth2/token"));
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_OmitsOptionalIdentityFields_WhenNull()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        var query = handler.Requests[0].RequestUri!.Query;
+        query.Should().NotContain("user_name");
+        query.Should().NotContain("user_email");
+        query.Should().NotContain("profile_picture");
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_IncludesOptionalIdentityFields_WhenProvided()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=auth-code-xyz");
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        await client.CompleteIdentityCallbackAsync(
+            "state-abc", "yvp-123", "Kevin", "kevin@example.com", "https://img/pic.png", "verifier");
+
+        var query = handler.Requests[0].RequestUri!.Query;
+        query.Should().Contain("user_name=Kevin");
+        query.Should().Contain("user_email=kevin%40example.com");
+        query.Should().Contain("profile_picture=");
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionApiException_WhenNoLocationHeaderReturned()
+    {
+        var noLocationResponse = new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent("upstream error", Encoding.UTF8, "text/plain")
+        };
+        var handler = new SequencedHttpMessageHandler(noLocationResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        await act.Should().ThrowAsync<YouVersionApiException>()
+            .Where(e => e.StatusCode == HttpStatusCode.BadGateway);
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionEmptyResponseException_WhenCodeMissingFromLocation()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?other=value");
+        var handler = new SequencedHttpMessageHandler(identityRedirect);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        await act.Should().ThrowAsync<YouVersionEmptyResponseException>();
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionEmptyResponseException_WhenCodeIsBlankInLocation()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=");
+        var handler = new SequencedHttpMessageHandler(identityRedirect);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        await act.Should().ThrowAsync<YouVersionEmptyResponseException>();
+    }
+
+    [Fact]
+    public async Task CompleteIdentityCallbackAsync_ResolvesRelativeLocationHeader_AgainstRequestUri()
+    {
+        var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
+        identityRedirect.Headers.Location = new Uri("/auth/callback?code=auth-code-xyz", UriKind.Relative);
+        var tokenResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TokenJson, Encoding.UTF8, "application/json")
+        };
+        var handler = new SequencedHttpMessageHandler(identityRedirect, tokenResponse);
+        var client = BuildClientFromSequencedHandler(handler);
+
+        var token = await client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
+
+        token.AccessToken.Should().Be("acc-tok");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task CompleteIdentityCallbackAsync_ThrowsArgumentException_WhenStateIsInvalid(string state)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+        var act = () => client.CompleteIdentityCallbackAsync(state, "yvp-123", null, null, null, "verifier");
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task CompleteIdentityCallbackAsync_ThrowsArgumentException_WhenYvpIdIsInvalid(string yvpId)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", yvpId, null, null, null, "verifier");
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task CompleteIdentityCallbackAsync_ThrowsArgumentException_WhenCodeVerifierIsInvalid(string codeVerifier)
+    {
+        var client = BuildClient(HttpStatusCode.OK, TokenJson);
+        var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, codeVerifier);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    // -------------------------------------------------------------------------
     // RefreshTokenAsync
     // -------------------------------------------------------------------------
 
@@ -688,6 +886,29 @@ public sealed class OAuthClientTests
             ClientId = "test-client",
             RedirectUri = new Uri("https://localhost/callback"),
             AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
+            TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
+        });
+        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
+        return new YouVersionOAuthClient(
+            httpClient,
+            options,
+            apiOptions,
+            tokenProvider ?? new FakeTokenProvider(),
+            NullLogger<YouVersionOAuthClient>.Instance);
+    }
+
+    private static YouVersionOAuthClient BuildClientFromSequencedHandler(
+        SequencedHttpMessageHandler handler,
+        FakeTokenProvider? tokenProvider = null,
+        string? appKey = "test-app-key")
+    {
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
+        var options = Options.Create(new YouVersionOAuthOptions
+        {
+            ClientId = "test-client",
+            RedirectUri = new Uri("https://localhost/callback"),
+            AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
+            AuthCallbackEndpoint = new Uri("https://auth.youversion.com/auth/callback"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
         var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });

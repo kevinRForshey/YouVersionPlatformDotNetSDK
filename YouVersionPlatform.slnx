@@ -7,6 +7,7 @@
   <Project Path="Platform.SDK.Services/Platform.SDK.Services.csproj" Id="c8d64e4f-f7f2-4f2f-9a86-26d4e1b8a8d7" />
   <Project Path="Platform.SDK.Services.Tests/Platform.SDK.Services.Tests.csproj" />
   <Project Path="PlatformTestApp/PlatformTestApp.csproj" Id="1782fe19-08bd-4659-b95f-6a9c32b26100" />
+  <Project Path="PlatformTestApp.Tests/PlatformTestApp.Tests.csproj" />
   <Project Path="YouVersion.UsfmReferences/YouVersion.UsfmReferences.csproj" />
   <Project Path="YouVersion.UsfmReferences.Tests/YouVersion.UsfmReferences.Tests.csproj" />
 </Solution>
