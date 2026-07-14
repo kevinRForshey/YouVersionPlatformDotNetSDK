@@ -78,10 +78,8 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
 {
     if (ctx.Request.Path == "/" && ctx.Request.Query.Count > 0)
     {
-        // Landing hits on "/" are the one point every OAuth/Data Exchange callback shape passes
-        // through. Logged at Debug so a shape we don't handle below (e.g. YouVersion returning
-        // ?error=... instead of ?code=..., or a callback param name that doesn't match what's
-        // checked here) is visible instead of silently falling through to the plain home page.
+        // Every callback shape lands here first; log so an unhandled shape (e.g. ?error=...)
+        // is visible instead of silently falling through to the home page.
         ctx.RequestServices.GetRequiredService<ILogger<Program>>()
             .LogDebug("Landed on \"/\" with query: {Query}", ctx.Request.QueryString);
     }
@@ -90,23 +88,18 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
     {
         ctx.Session.SetString("oauth_code", ctx.Request.Query["code"].ToString());
         ctx.Session.SetString("oauth_state_return", ctx.Request.Query["state"].ToString());
-        // Present when `requested_permissions` was included on /auth/authorize *and* YouVersion
-        // returned the grant result on this same callback rather than as a separate
-        // data_exchange_status redirect (both shapes have been observed live — see below).
-        // Comma-separated; empty string means requested-but-denied; absent means not requested.
+        // Comma-separated grant result, present only when YouVersion folds it into this callback
+        // instead of sending a separate data_exchange_status redirect (both shapes occur live).
+        // Empty string = requested but denied; absent = not requested.
         if (ctx.Request.Query.ContainsKey("granted_permissions"))
             ctx.Session.SetString("oauth_granted_permissions", ctx.Request.Query["granted_permissions"].ToString());
         ctx.Response.Redirect("/auth/callback-complete");
         return;
     }
 
-    // Some Data Exchange consent completions arrive as a *separate* hit on "/" (no `code` this
-    // time — that already came through above) rather than folding `granted_permissions` into the
-    // code callback. This is the standalone-flow callback shape (see
-    // IYouVersionOAuthClient.ParseDataExchangeCallback), which YouVersion's server also uses to
-    // report the result of a requested_permissions consent shown during sign-in. Do not remove
-    // this without first confirming, via a real completed browser sign-in, that it's unreachable —
-    // a static check of the outbound /auth/authorize URL alone does not prove that.
+    // Standalone Data Exchange callback shape: consent result arrives as a separate hit on "/"
+    // rather than folded into the code callback above (see ParseDataExchangeCallback). Confirmed
+    // reachable via live sign-in — don't remove without re-verifying against a real browser flow.
     if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("data_exchange_status"))
     {
         var oauthClient = ctx.RequestServices.GetRequiredService<IYouVersionOAuthClient>();
@@ -123,15 +116,11 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
         return;
     }
 
-    // For browser clients (this app included), /auth/authorize doesn't redirect back with a
-    // redeemable `code` — it redirects back with identity fields only:
+    // Browser clients get identity fields back, not a redeemable `code`:
     //   ?profile_picture=...&state=...&user_email=...&user_name=...&yvp_id=...&granted_permissions=highlights
-    // `yvp_id` (YouVersion's own user id) is the discriminator: only a genuine YouVersion redirect
-    // sets it, so this branch can't collide with the dev-only shortcut below. This is documented,
-    // normal step-1 behavior (https://developers.youversion.com/sign-in-apis), not a degraded
-    // fallback — completing the sign-in requires calling IYouVersionOAuthClient
-    // .CompleteIdentityCallbackAsync with these fields, which does steps 2 (/auth/callback, to get
-    // a real `code`) and 3 (/auth/token) on our behalf and returns a genuine access token.
+    // Normal step-1 behavior (https://developers.youversion.com/sign-in-apis), not a fallback.
+    // `yvp_id` only appears on a genuine YouVersion redirect, so it can't collide with the
+    // dev-only shortcut below. CompleteIdentityCallbackAsync runs steps 2-3 and returns a real token.
     if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("yvp_id"))
     {
         var expectedState = ctx.Session.GetString("oauth_state");
@@ -171,9 +160,8 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
             return;
         }
 
-        // Absent means "not requested this round trip" — must NOT be treated as "denied", or a
-        // plain sign-in (no highlights requested) would silently wipe out an existing grant from a
-        // prior /auth/request-highlights approval.
+        // Absent = not requested this round trip, NOT denied — treating it as denied would wipe
+        // out an existing grant from a prior /auth/request-highlights approval.
         if (ctx.Request.Query.ContainsKey("granted_permissions"))
         {
             var highlightsGranted = ctx.Request.Query["granted_permissions"].ToString()
@@ -188,11 +176,10 @@ app.Use(async (HttpContext ctx, RequestDelegate next) =>
         return;
     }
 
-    // Dev-only convenience: lets the UI be exercised without a live OAuth round trip.
-    // Builds an unsigned token from raw query params, so it must never be reachable
-    // outside Development — anyone could pass ?dev_signin=1&user_name=admin and appear signed in.
-    // Gated on the explicit `dev_signin` marker (rather than just user_name/user_email) so it can
-    // never collide with a real YouVersion callback, which is keyed on `yvp_id` above instead.
+    // Dev-only shortcut to exercise the UI without a live OAuth round trip. Builds an unsigned
+    // token from raw query params — must never be reachable outside Development, since anyone
+    // could pass ?dev_signin=1&user_name=admin and appear signed in. Gated on the `dev_signin`
+    // marker so it can't collide with a real callback, which is keyed on `yvp_id` instead.
     if (app.Environment.IsDevelopment() && ctx.Request.Path == "/" &&
         ctx.Request.Query.ContainsKey("dev_signin"))
     {
@@ -229,16 +216,10 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 // Builds a fresh PKCE authorization redirect and parks the verifier/state in session. Shared by
-// /auth/login (no permissions) and /auth/request-highlights (requests "highlights"), since both
-// need to land on the same yvp_id callback branch above, which now completes the full sign-in
-// (via CompleteIdentityCallbackAsync) and so always ends up with a genuine access token.
-//
-// /auth/request-highlights re-runs the whole authorize redirect rather than using the separate
-// RequestPermissionsAsync + BuildDataExchangeApprovalUrl round trip (which only needs an existing
-// access token, not a fresh sign-in) purely for consistency: it reuses the exact same,
-// already-tested call chain as ordinary sign-in instead of a second, less-exercised path. Swap to
-// the two-step round trip if avoiding the extra redirect hop for already-signed-in users matters
-// more than that.
+// /auth/login and /auth/request-highlights so both land on the same yvp_id callback branch and
+// reuse the same tested sign-in path, rather than /auth/request-highlights taking the separate
+// (less-exercised) RequestPermissionsAsync + BuildDataExchangeApprovalUrl round trip. Switch to
+// that two-step flow if avoiding the extra redirect for already-signed-in users matters more.
 static IResult RedirectToAuthorize(IYouVersionOAuthClient oauthClient, HttpContext ctx, IEnumerable<string>? requestedPermissions)
 {
     var state = Base64Url(RandomNumberGenerator.GetBytes(16));
@@ -254,10 +235,9 @@ static IResult RedirectToAuthorize(IYouVersionOAuthClient oauthClient, HttpConte
 app.MapGet("/auth/login", (IYouVersionOAuthClient oauthClient, HttpContext ctx) =>
     RedirectToAuthorize(oauthClient, ctx, requestedPermissions: null));
 
-// "Grant highlights access" for an already-signed-in user. Re-runs the same authorize redirect as
-// /auth/login, but with "highlights" requested — see RedirectToAuthorize's comment for why this,
-// rather than the separate RequestPermissionsAsync + BuildDataExchangeApprovalUrl round trip, is
-// the path that actually completes for this app's client/registration.
+// "Grant highlights access" for an already-signed-in user — same redirect as /auth/login, but
+// requesting "highlights". See RedirectToAuthorize for why this path is used instead of the
+// separate RequestPermissionsAsync + BuildDataExchangeApprovalUrl round trip.
 app.MapGet("/auth/request-highlights", (IYouVersionOAuthClient oauthClient, HttpContext ctx) =>
     RedirectToAuthorize(oauthClient, ctx, requestedPermissions: ["highlights"]));
 
@@ -310,11 +290,9 @@ app.MapGet("/auth/callback-complete", async (IYouVersionOAuthClient oauthClient,
     if (exchangeError is not null)
         return Results.Redirect($"/?oauth_error={Uri.EscapeDataString(exchangeError)}&auth_mode=code");
 
-    // /auth/login no longer requests permissions inline (see its comment), so
-    // `granted_permissions` should never be present on this callback in practice. This stays as a
-    // defensive fallback only — absent means "not requested this round trip", which must NOT be
-    // treated as "denied": that would overwrite an existing grant from a prior /auth/request-highlights
-    // approval with a false denial on every plain sign-in.
+    // Defensive fallback only — /auth/login no longer requests permissions inline, so this should
+    // rarely be present. Absent means "not requested," NOT "denied": treating it as denied would
+    // overwrite an existing grant from a prior /auth/request-highlights approval.
     var grantedPermissions = ctx.Session.GetString("oauth_granted_permissions");
     ctx.Session.Remove("oauth_granted_permissions");
 

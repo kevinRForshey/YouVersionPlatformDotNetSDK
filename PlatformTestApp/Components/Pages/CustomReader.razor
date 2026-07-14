@@ -3,8 +3,13 @@
 @using Platform.SDK.Components.BibleComponents.Verses
 @using Platform.SDK.Services
 @using Platform.API.Models
+@using Platform.API.OAuth
+@using PlatformTestApp.Auth
 @inject IBibleReaderStateService State
 @inject IPassageService PassageService
+@inject HighlightsPermissionStore PermissionStore
+@inject ITokenProvider TokenProvider
+@inject NavigationManager Nav
 @rendermode InteractiveServer
 @implements IDisposable
 
@@ -28,7 +33,19 @@
         </p>
     </header>
 
-    
+    @if (HighlightsStatus == "denied")
+    {
+        <div class="alert alert-warning">Highlights access was not granted, so verse highlighting is unavailable.</div>
+    }
+    @if (_isSignedIn && !_highlightsEnabled)
+    {
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>Sign-in doesn't request highlights access by itself &mdash; grant it separately to enable verse highlighting.</span>
+            <button class="read-passage-button" @onclick="RequestHighlightsAsync">Grant highlights access</button>
+        </div>
+    }
+
+
     
     @* Putting the components together *@
     <div class="cr-pipeline">
@@ -149,7 +166,7 @@
                 <VerseComponent Passage="@(_passage!)"
                             Copyright="@State.SelectedVersion?.Copyright"
                             VersionId="@(State.SelectedVersion?.Id ?? 0)"
-                            EnableHighlighting="false" />
+                            EnableHighlighting="@_highlightsEnabled" />
             }
             else if (CanRead)
             {

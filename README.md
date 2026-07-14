@@ -14,14 +14,29 @@ reading passages, and managing highlights.
 
 | Package | Description |
 |---|---|
-| `YouVersion.Platform.API.Models` | Zero-dependency domain model types (Versions, Books, Chapters, Verses, Passages, Highlights). |
-| `YouVersion.Platform.API` | Typed HTTP clients, OAuth+PKCE, caching decorators, resilience/rate-limiting pipeline, DI wiring. |
-| `YouVersion.Platform.SDK.Services` | Business-logic services (`VersionService`, `PassageService`, `BookService`, `HighlightService`, `BibleReaderStateService`) sitting between the raw API client and the UI layer. |
-| `YouVersion.Platform.SDK.Components` | Blazor components: version/book/chapter/verse pickers, `BibleReader`, click-to-highlight `VerseComponent`, `YouVersionAuth`. |
-| `YouVersion.UsfmReferences` | Independent, unofficial C# port of [youversion/usfm-references](https://github.com/YouVersion/usfm-references) for parsing/validating USFM scripture references. Versioned separately from the `Platform.*` packages. |
+| [`YouVersion.Platform.API.Models`](Platform.API.Models/README.md) | Zero-dependency domain model types (Versions, Books, Chapters, Verses, Passages, Highlights). |
+| [`YouVersion.Platform.API`](Platform.API/README.md) | Typed HTTP clients, OAuth+PKCE, caching decorators, resilience/rate-limiting pipeline, DI wiring. |
+| [`YouVersion.Platform.SDK.Services`](Platform.SDK.Services/README.md) | Business-logic services (`VersionService`, `PassageService`, `BookService`, `HighlightService`, `BibleReaderStateService`) sitting between the raw API client and the UI layer. |
+| [`YouVersion.Platform.SDK.Components`](Platform.SDK.Components/README.md) | Blazor components: version/book/chapter/verse pickers, `BibleReader`, click-to-highlight `VerseComponent`, `YouVersionAuth`. |
+| `YouVersion.UsfmReferences` | Independent, unofficial C# port of [youversion/usfm-references](https://github.com/YouVersion/usfm-references) for parsing/validating USFM scripture references. Versioned separately from the `Platform.*` packages; documented in this README rather than its own. |
 
 See each package's own README (linked above, and published alongside it on NuGet) for installation
 and usage details.
+
+## Which package(s) do I need?
+
+| If you want to... | Install |
+|---|---|
+| Call the Platform API directly (versions, passages, highlights) from a backend, console app, Azure Function, etc. — no UI | `YouVersion.Platform.API.Models` + `YouVersion.Platform.API` |
+| Sign users in via OAuth/PKCE and call the API on their behalf, still with no UI | Same as above — OAuth lives in `Platform.API`. See [`Platform.API/README.md`](Platform.API/README.md) and the [OAuth/PKCE guide](docs/oauth-guide.md). |
+| Build your own UI (not Blazor, or a custom Blazor UI) on top of ready-made business logic (highlight toggling, reader state, etc.) instead of raw HTTP calls | Add `YouVersion.Platform.SDK.Services` |
+| Build a Blazor app and want ready-made UI — pickers, `BibleReader`, click-to-highlight, the `YouVersionAuth` sign-in widget | `YouVersion.Platform.SDK.Components` (pulls in `Services`, `API`, and `Models` transitively — just install this one) |
+| Parse or validate USFM scripture references, unrelated to the Platform API | `YouVersion.UsfmReferences` only |
+
+In short: install the *highest* package in the list that matches what you're building — its NuGet
+dependencies pull in everything below it automatically. Only reach for `Platform.API` /
+`Platform.SDK.Services` directly if you're deliberately building your own UI layer instead of using
+`Platform.SDK.Components`.
 
 ## Architecture
 
