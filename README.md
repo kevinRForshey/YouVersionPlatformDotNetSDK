@@ -14,11 +14,11 @@ reading passages, and managing highlights.
 
 | Package | Description |
 |---|---|
-| [`YouVersion.Platform.API.Models`](Platform.API.Models/README.md) | Zero-dependency domain model types (Versions, Books, Chapters, Verses, Passages, Highlights). |
-| [`YouVersion.Platform.API`](Platform.API/README.md) | Typed HTTP clients, OAuth+PKCE, caching decorators, resilience/rate-limiting pipeline, DI wiring. |
-| [`YouVersion.Platform.SDK.Services`](Platform.SDK.Services/README.md) | Business-logic services (`VersionService`, `PassageService`, `BookService`, `HighlightService`, `BibleReaderStateService`) sitting between the raw API client and the UI layer. |
-| [`YouVersion.Platform.SDK.Components`](Platform.SDK.Components/README.md) | Blazor components: version/book/chapter/verse pickers, `BibleReader`, click-to-highlight `VerseComponent`, `YouVersionAuth`. |
-| `YouVersion.UsfmReferences` | Independent, unofficial C# port of [youversion/usfm-references](https://github.com/YouVersion/usfm-references) for parsing/validating USFM scripture references. Versioned separately from the `Platform.*` packages; documented in this README rather than its own. |
+| [`Unofficial-YouVersion.Platform.API.Models`](Platform.API.Models/README.md) | Zero-dependency domain model types (Versions, Books, Chapters, Verses, Passages, Highlights). |
+| [`Unofficial-YouVersion.Platform.API`](Platform.API/README.md) | Typed HTTP clients, OAuth+PKCE, caching decorators, resilience/rate-limiting pipeline, DI wiring. |
+| [`Unofficial-YouVersion.Platform.SDK.Services`](Platform.SDK.Services/README.md) | Business-logic services (`VersionService`, `PassageService`, `BookService`, `HighlightService`, `BibleReaderStateService`) sitting between the raw API client and the UI layer. |
+| [`Unofficial-YouVersion.Platform.SDK.Components`](Platform.SDK.Components/README.md) | Blazor components: version/book/chapter/verse pickers, `BibleReader`, click-to-highlight `VerseComponent`, `YouVersionAuth`. |
+| `Unofficial-YouVersion.UsfmReferences` | Independent, unofficial C# port of [youversion/usfm-references](https://github.com/YouVersion/usfm-references) for parsing/validating USFM scripture references. Versioned separately from the `Platform.*` packages; documented in this README rather than its own. |
 
 See each package's own README (linked above, and published alongside it on NuGet) for installation
 and usage details.
@@ -27,11 +27,11 @@ and usage details.
 
 | If you want to... | Install |
 |---|---|
-| Call the Platform API directly (versions, passages, highlights) from a backend, console app, Azure Function, etc. — no UI | `YouVersion.Platform.API.Models` + `YouVersion.Platform.API` |
-| Sign users in via OAuth/PKCE and call the API on their behalf, still with no UI | Same as above — OAuth lives in `Platform.API`. See [`Platform.API/README.md`](Platform.API/README.md) and the [OAuth/PKCE guide](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/oauth-guide.md). |
-| Build your own UI (not Blazor, or a custom Blazor UI) on top of ready-made business logic (highlight toggling, reader state, etc.) instead of raw HTTP calls | Add `YouVersion.Platform.SDK.Services` |
-| Build a Blazor app and want ready-made UI — pickers, `BibleReader`, click-to-highlight, the `YouVersionAuth` sign-in widget | `YouVersion.Platform.SDK.Components` (pulls in `Services`, `API`, and `Models` transitively — just install this one) |
-| Parse or validate USFM scripture references, unrelated to the Platform API | `YouVersion.UsfmReferences` only |
+| Call the Platform API directly (versions, passages, highlights) from a backend, console app, Azure Function, etc. — no UI | `Unofficial-YouVersion.Platform.API.Models` + `Unofficial-YouVersion.Platform.API` |
+| Sign users in via OAuth/PKCE and call the API on their behalf, still with no UI | Same as above — OAuth lives in `Platform.API`. See [`Platform.API/README.md`](Platform.API/README.md) and the [OAuth/PKCE guide](docs/oauth-guide.md). |
+| Build your own UI (not Blazor, or a custom Blazor UI) on top of ready-made business logic (highlight toggling, reader state, etc.) instead of raw HTTP calls | Add `Unofficial-YouVersion.Platform.SDK.Services` |
+| Build a Blazor app and want ready-made UI — pickers, `BibleReader`, click-to-highlight, the `YouVersionAuth` sign-in widget | `Unofficial-YouVersion.Platform.SDK.Components` (pulls in `Services`, `API`, and `Models` transitively — just install this one) |
+| Parse or validate USFM scripture references, unrelated to the Platform API | `Unofficial-YouVersion.UsfmReferences` only |
 
 In short: install the *highest* package in the list that matches what you're building — its NuGet
 dependencies pull in everything below it automatically. Only reach for `Platform.API` /
@@ -68,8 +68,8 @@ full OAuth/PKCE sign-in flow.
 ## Quickstart
 
 ```bash
-dotnet add package YouVersion.Platform.API.Models
-dotnet add package YouVersion.Platform.API
+dotnet add package Unofficial-YouVersion.Platform.API.Models
+dotnet add package Unofficial-YouVersion.Platform.API
 ```
 
 ```csharp
@@ -79,7 +79,7 @@ builder.Services.AddYouVersionApiClients(options =>
 });
 ```
 
-For the full Blazor UI layer (pickers, reader, highlighting) add `YouVersion.Platform.SDK.Components`
+For the full Blazor UI layer (pickers, reader, highlighting) add `Unofficial-YouVersion.Platform.SDK.Components`
 instead — it pulls in `Services` and `API` transitively. See `Platform.API/README.md` for OAuth setup
 and `Platform.SDK.Components/README.md` for the component walkthrough.
 
@@ -92,7 +92,7 @@ NuGet.org happens via `.github/workflows/nuget-publish.yml`, triggered by publis
 against that tag. Untagged commits build as `0.0.0-alpha.0.N` prereleases automatically — safe to
 build and test locally or in CI, but not intended to be published.
 
-`YouVersion.UsfmReferences` carries its own explicit `<Version>` (not MinVer-derived) since it
+`Unofficial-YouVersion.UsfmReferences` carries its own explicit `<Version>` (not MinVer-derived) since it
 tracks the upstream Python library's release cadence independently of the `Platform.*` packages.
 
 **Status:** no tagged release has been cut yet — every package currently builds as a `0.0.0-alpha`
