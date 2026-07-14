@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet package identity -->
-    <PackageId>YouVersion.Platform.SDK.Services</PackageId>
+    <PackageId>Unofficial-YouVersion.Platform.SDK.Services</PackageId>
     <Authors>Kevin Forshey</Authors>
     <Product>YouVersion Platform SDK Services</Product>
     <Description>Business-logic services (VersionService, PassageService, BookService, HighlightService, BibleReaderStateService) for the YouVersion Platform SDK.</Description>

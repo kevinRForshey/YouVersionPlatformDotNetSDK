@@ -1,4 +1,4 @@
-# YouVersion.Platform.SDK.Components
+# Unofficial-YouVersion.Platform.SDK.Components
 
 Blazor UI components for the [YouVersion Platform SDK](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK).
 
@@ -7,10 +7,10 @@ Provides reusable Bible reader and related Blazor components (version/book/chapt
 ## Installation
 
 ```bash
-dotnet add package YouVersion.Platform.SDK.Components
+dotnet add package Unofficial-YouVersion.Platform.SDK.Components
 ```
 
-This package transitively installs `YouVersion.Platform.SDK.Services`, `YouVersion.Platform.API`, and `YouVersion.Platform.API.Models`.
+This package transitively installs `Unofficial-YouVersion.Platform.SDK.Services`, `Unofficial-YouVersion.Platform.API`, and `Unofficial-YouVersion.Platform.API.Models`.
 
 Register the underlying services once at startup:
 

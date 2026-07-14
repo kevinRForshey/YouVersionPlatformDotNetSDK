@@ -1,4 +1,4 @@
-# YouVersion.Platform.API.Models
+# Unofficial-YouVersion.Platform.API.Models
 
 Domain model types for the [YouVersion Platform REST API](https://developers.youversion.com).
 

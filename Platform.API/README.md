@@ -1,4 +1,4 @@
-# YouVersion.Platform.API
+# Unofficial-YouVersion.Platform.API
 
 Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.youversion.com).
 
@@ -22,7 +22,7 @@ Add package references as needed:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="YouVersion.Platform.API" Version="1.0.0" />
+  <PackageReference Include="Unofficial-YouVersion.Platform.API" Version="0.1.2" />
 </ItemGroup>
 ```
 
