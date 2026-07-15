@@ -5,9 +5,8 @@ Part of the [YouVersion Platform SDK for .NET](../README.md).
 Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.youversion.com).
 
 Depends on [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) for its
-request/response types, and on `Unofficial-YouVersion.UsfmReferences` (documented in the
-[solution README](../README.md#packages)) for parsing scripture references such as `Reference` and
-`VerseRange`.
+request/response types, and on [`Unofficial-YouVersion.UsfmReferences`](../YouVersion.UsfmReferences/README.md)
+for parsing scripture references such as `Reference` and `VerseRange`.
 
 ## What this package provides
 
