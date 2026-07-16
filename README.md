@@ -10,8 +10,8 @@ reading passages, and managing highlights.
 > **Not affiliated with or endorsed by YouVersion / Life.Church.** This is an independent, community
 > implementation built against YouVersion's public Platform API.
 
-**See it in action:** [`PlatformTestApp`](PlatformTestApp) is a full working sample app. It shows
-both the all-in-one `<BibleReader>` component and a composite reader built from the individual
+**See it in action:** [`PlatformTestApp`](PlatformTestApp/README.md) is a full working sample app. It
+shows both the all-in-one `<BibleReader>` component and a composite reader built from the individual
 pickers, so you can see exactly how to assemble your own UI — including the OAuth/PKCE sign-in flow
 and click-to-highlight components.
 
