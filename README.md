@@ -66,9 +66,9 @@ test (`Platform.API.Tests/Architecture/ApiClientBoundaryTests.cs`) fails the bui
 `PlatformTestApp` / `Platform.SDK.Components` reference `Platform.API` client types directly instead
 of going through `Platform.SDK.Services`.
 
-`PlatformTestApp` is a working sample host demonstrating two consumption patterns — the all-in-one
-`<BibleReader>` component (`/`) and manual step-by-step composition (`/custom-reader`) — plus the
-full OAuth/PKCE sign-in flow.
+[`PlatformTestApp`](PlatformTestApp/README.md) is a working sample host demonstrating two
+consumption patterns — the all-in-one `<BibleReader>` component (`/`) and manual step-by-step
+composition (`/custom-reader`) — plus the full OAuth/PKCE sign-in flow.
 
 ## Quickstart
 
