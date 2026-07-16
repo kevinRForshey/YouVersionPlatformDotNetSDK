@@ -1,6 +1,12 @@
 # Unofficial-YouVersion.Platform.API
 
+Part of the [YouVersion Platform SDK for .NET](../README.md).
+
 Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.youversion.com).
+
+Depends on [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) for its
+request/response types, and on [`Unofficial-YouVersion.UsfmReferences`](../YouVersion.UsfmReferences/README.md)
+for parsing scripture references such as `Reference` and `VerseRange`.
 
 ## What this package provides
 
@@ -307,9 +313,15 @@ Blazor Server prerender into the live interactive circuit.
 
 ## Additional docs
 
-- [Getting started](../docs/getting-started.md)
-- [Authentication (app key)](../docs/authentication.md)
-- [OAuth guide](../docs/oauth-guide.md)
+- [Getting started](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/getting-started.md)
+- [Authentication (app key)](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/authentication.md)
+- [OAuth guide](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/oauth-guide.md)
+
+## Related packages
+
+- [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) — the model types this client returns.
+- [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md) — business-logic services built on top of this client; consider this layer instead of calling `Platform.API` directly when building your own UI.
+- [`Unofficial-YouVersion.Platform.SDK.Components`](../Platform.SDK.Components/README.md) — ready-made Blazor UI that consumes this client transitively.
 
 ## Build and pack
 

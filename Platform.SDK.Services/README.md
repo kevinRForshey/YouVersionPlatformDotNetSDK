@@ -1,8 +1,10 @@
 # Unofficial-YouVersion.Platform.SDK.Services
 
+Part of the [YouVersion Platform SDK for .NET](../README.md).
+
 Business-logic services for the [YouVersion Platform SDK](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK).
 
-Provides `VersionService`, `PassageService`, `BookService`, `ChapterService`, `HighlightService`, and `BibleReaderStateService` — the stateful layer between the raw HTTP client (`Unofficial-YouVersion.Platform.API`) and the Blazor component library (`Unofficial-YouVersion.Platform.SDK.Components`).
+Provides `VersionService`, `PassageService`, `BookService`, `ChapterService`, `HighlightService`, and `BibleReaderStateService` — the stateful layer between the raw HTTP client ([`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md), using types from [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md)) and the Blazor component library ([`Unofficial-YouVersion.Platform.SDK.Components`](../Platform.SDK.Components/README.md)).
 
 ## Installation
 
@@ -37,11 +39,11 @@ IReadOnlyList<Chapter> chapters = await chapterService.GetChaptersAsync(
 
 ## Highlighting a passage
 
-`IHighlightService` wraps the highlights API (`Platform.API`'s `IHighlightClient`). Reads
+`IHighlightService` wraps the highlights API ([`Platform.API`](../Platform.API/README.md)'s `IHighlightClient`). Reads
 (`GetHighlightsAsync`, `GetRecentColorsAsync`) work with the app-key auth every other service in
 this package uses. Writes (`CreateOrUpdateHighlightAsync`, `ClearHighlightsAsync`) require an
 OAuth bearer token from a signed-in user who has granted the `highlights` Data Exchange permission
-— see `AddYouVersionOAuth` in `Unofficial-YouVersion.Platform.API`'s README for that setup. There's no opaque
+— see `AddYouVersionOAuth` in [`Unofficial-YouVersion.Platform.API`'s README](../Platform.API/README.md#oauth-setup-optional) for that setup. There's no opaque
 highlight id: a highlight is identified by the `(bibleId, passage)` pair, and colors are always raw
 hex strings without a leading `#` (e.g. `"44aa44"`), not an enum — the API has no fixed palette.
 
@@ -58,10 +60,16 @@ Highlight highlight = await highlightService.CreateOrUpdateHighlightAsync(
 await highlightService.ClearHighlightsAsync(bibleId: 3034, passage: verseReference);
 ```
 
-`Platform.SDK.Components`'s `VerseComponent` (and, through it, `BibleReader`) is the recommended way
+[`Platform.SDK.Components`](../Platform.SDK.Components/README.md)'s `VerseComponent` (and, through it, `BibleReader`) is the recommended way
 to consume this service — it already handles sign-in checks, loading, and the color-picker UI. See
 that package's README for how to enable highlighting when composing your own reader instead of
 using `BibleReader` directly.
+
+## Related packages
+
+- [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) — the model types these services operate on.
+- [`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md) — the raw HTTP client this package wraps.
+- [`Unofficial-YouVersion.Platform.SDK.Components`](../Platform.SDK.Components/README.md) — the Blazor UI layer built on top of these services.
 
 ## License
 

@@ -23,7 +23,7 @@ and click-to-highlight components.
 | [`Unofficial-YouVersion.Platform.API`](Platform.API/README.md) | Typed HTTP clients, OAuth+PKCE, caching decorators, resilience/rate-limiting pipeline, DI wiring. |
 | [`Unofficial-YouVersion.Platform.SDK.Services`](Platform.SDK.Services/README.md) | Business-logic services (`VersionService`, `PassageService`, `BookService`, `HighlightService`, `BibleReaderStateService`) sitting between the raw API client and the UI layer. |
 | [`Unofficial-YouVersion.Platform.SDK.Components`](Platform.SDK.Components/README.md) | Blazor components: version/book/chapter/verse pickers, `BibleReader`, click-to-highlight `VerseComponent`, `YouVersionAuth`. |
-| `Unofficial-YouVersion.UsfmReferences` | Independent, unofficial C# port of [youversion/usfm-references](https://github.com/YouVersion/usfm-references) for parsing/validating USFM scripture references. Versioned separately from the `Platform.*` packages; documented in this README rather than its own. |
+| [`Unofficial-YouVersion.UsfmReferences`](YouVersion.UsfmReferences/README.md) | Independent, unofficial C# port of [youversion/usfm-references](https://github.com/YouVersion/usfm-references) for parsing/validating USFM scripture references. Versioned separately from the `Platform.*` packages. |
 
 See each package's own README (linked above, and published alongside it on NuGet) for installation
 and usage details.

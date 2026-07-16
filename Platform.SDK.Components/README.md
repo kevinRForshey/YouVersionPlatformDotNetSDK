@@ -1,5 +1,7 @@
 # Unofficial-YouVersion.Platform.SDK.Components
 
+Part of the [YouVersion Platform SDK for .NET](../README.md).
+
 Blazor UI components for the [YouVersion Platform SDK](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK).
 
 Provides reusable Bible reader and related Blazor components (version/book/chapter/verse pickers, `BibleReader`, `YouVersionAuth`, `VerseComponent`) built on plain Bootstrap markup — no UI framework dependency beyond what your host app already brings in.
@@ -10,7 +12,7 @@ Provides reusable Bible reader and related Blazor components (version/book/chapt
 dotnet add package Unofficial-YouVersion.Platform.SDK.Components
 ```
 
-This package transitively installs `Unofficial-YouVersion.Platform.SDK.Services`, `Unofficial-YouVersion.Platform.API`, and `Unofficial-YouVersion.Platform.API.Models`.
+This package transitively installs [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md), [`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md), and [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md).
 
 Register the underlying services once at startup:
 
@@ -19,6 +21,9 @@ builder.Services.AddYouVersionApiClients(options => { /* ... */ });
 builder.Services.AddYouVersionOAuth(options => { /* ... */ }); // only if you need sign-in / highlighting
 builder.Services.AddYouVersionComponents();
 ```
+
+See [`Platform.API`'s README](../Platform.API/README.md#oauth-setup-optional) for `AddYouVersionOAuth` setup and
+[`Platform.SDK.Services`'s README](../Platform.SDK.Services/README.md) for the services `AddYouVersionComponents()` registers.
 
 `AddYouVersionComponents()` registers `IVersionService`, `IBookService`, `IChapterService`,
 `IPassageService`, `IHighlightService`, and `IBibleReaderStateService` as **scoped** — one instance
@@ -309,6 +314,12 @@ inside `BibleReader`, but usable standalone anywhere you want auth controls (e.g
 Sign-in state is re-checked after the component's first interactive render in addition to
 initialization — a token stored during the OAuth callback round-trip may not be visible in the SSR
 prerender scope the component first ran in, so this avoids a stale "signed out" flash.
+
+## Related packages
+
+- [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) — the model types (`Passage`, `Highlight`, etc.) these components render.
+- [`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md) — the raw HTTP client and OAuth setup underneath this package.
+- [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md) — the service layer these components inject and consume.
 
 ## License
 

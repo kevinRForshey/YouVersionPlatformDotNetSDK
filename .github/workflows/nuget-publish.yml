@@ -19,6 +19,13 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      # nuget.config points a local package source ("YouVersionLocal") at ./packages. NuGet
+      # requires local source directories to exist at restore time -- even for projects that
+      # don't consume anything from them -- or restore fails with NU1301, so create it before
+      # any restore runs (same reason ci.yml does this).
+      - name: Create local NuGet feed directory
+        run: mkdir -p packages
+
       - name: Restore
         run: dotnet restore
 
@@ -31,6 +38,9 @@ jobs:
       # Pack in strict dependency order so inter-package refs resolve correctly
       - name: Pack Platform.API.Models
         run: dotnet pack Platform.API.Models -c Release --no-build -o ./nupkgs
+
+      - name: Pack YouVersion.UsfmReferences
+        run: dotnet pack YouVersion.UsfmReferences -c Release --no-build -o ./nupkgs
 
       - name: Pack Platform.API
         run: dotnet pack Platform.API -c Release --no-build -o ./nupkgs
