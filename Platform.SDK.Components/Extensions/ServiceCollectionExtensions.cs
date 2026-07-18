@@ -12,9 +12,9 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers the SDK services required by the YouVersion Blazor components:
     /// <see cref="IVersionService"/>, <see cref="IBookService"/>, <see cref="IChapterService"/>,
-    /// <see cref="IPassageService"/>, <see cref="IHighlightService"/>, and
-    /// <see cref="IBibleReaderStateService"/>.
-    /// Call this after <c>AddYouVersionApiClients</c>.
+    /// <see cref="IPassageService"/>, <see cref="IHighlightService"/>,
+    /// <see cref="IBibleReaderStateService"/>, and <see cref="IAuthSessionService"/>.
+    /// Call this after <c>AddYouVersionApiClients</c> and <c>AddYouVersionOAuth</c>.
     /// </summary>
     public static IServiceCollection AddYouVersionComponents(this IServiceCollection services)
     {
@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<IPassageService, PassageService>();
         services.TryAddScoped<IHighlightService, HighlightService>();
         services.TryAddScoped<IBibleReaderStateService, BibleReaderStateService>();
+        services.TryAddScoped<IAuthSessionService, AuthSessionService>();
 
         return services;
     }

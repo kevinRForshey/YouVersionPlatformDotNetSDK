@@ -2,16 +2,24 @@
 
 namespace Platform.SDK.Services
 {
+    /// <inheritdoc/>
     public sealed class BibleReaderStateService : IBibleReaderStateService
     {
+        /// <inheritdoc/>
         public BibleVersionSummary? SelectedVersion { get; private set; }
+        /// <inheritdoc/>
         public Book? SelectedBook { get; private set; }
+        /// <inheritdoc/>
         public int? SelectedChapter { get; private set; }
+        /// <inheritdoc/>
         public int? SelectedVerseStart { get; private set; }
+        /// <inheritdoc/>
         public int? SelectedVerseEnd { get; private set; }
 
+        /// <inheritdoc/>
         public event Action? OnStateChanged;
 
+        /// <inheritdoc/>
         public void SelectVersion(BibleVersionSummary version)
         {
             SelectedVersion = version;
@@ -22,6 +30,7 @@ namespace Platform.SDK.Services
             NotifyStateChanged();
         }
 
+        /// <inheritdoc/>
         public void SelectBook(Book book)
         {
             SelectedBook = book;
@@ -31,6 +40,7 @@ namespace Platform.SDK.Services
             NotifyStateChanged();
         }
 
+        /// <inheritdoc/>
         public void SelectChapter(int chapter)
         {
             SelectedChapter = chapter;
@@ -39,6 +49,7 @@ namespace Platform.SDK.Services
             NotifyStateChanged();
         }
 
+        /// <inheritdoc/>
         public void SelectVerseRange(int start, int? end)
         {
             SelectedVerseStart = start;
@@ -46,6 +57,7 @@ namespace Platform.SDK.Services
             NotifyStateChanged();
         }
 
+        /// <inheritdoc/>
         public void Reset()
         {
             SelectedVersion = null;

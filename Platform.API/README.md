@@ -1,11 +1,11 @@
-# Unofficial-YouVersion.Platform.API
+# YouVersion.Platform.API.Unofficial
 
 Part of the [YouVersion Platform SDK for .NET](../README.md).
 
 Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.youversion.com).
 
-Depends on [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) for its
-request/response types, and on [`Unofficial-YouVersion.UsfmReferences`](../YouVersion.UsfmReferences/README.md)
+Depends on [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md) for its
+request/response types, and on [`YouVersion.UsfmReferences.Unofficial`](../YouVersion.UsfmReferences/README.md)
 for parsing scripture references such as `Reference` and `VerseRange`.
 
 ## What this package provides
@@ -28,7 +28,7 @@ Add package references as needed:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Unofficial-YouVersion.Platform.API" Version="0.1.2" />
+  <PackageReference Include="YouVersion.Platform.API.Unofficial" Version="0.1.2" />
 </ItemGroup>
 ```
 
@@ -319,9 +319,9 @@ Blazor Server prerender into the live interactive circuit.
 
 ## Related packages
 
-- [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) — the model types this client returns.
-- [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md) — business-logic services built on top of this client; consider this layer instead of calling `Platform.API` directly when building your own UI.
-- [`Unofficial-YouVersion.Platform.SDK.Components`](../Platform.SDK.Components/README.md) — ready-made Blazor UI that consumes this client transitively.
+- [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md) — the model types this client returns.
+- [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md) — business-logic services built on top of this client; consider this layer instead of calling `Platform.API` directly when building your own UI.
+- [`YouVersion.Platform.SDK.Components.Unofficial`](../Platform.SDK.Components/README.md) — ready-made Blazor UI that consumes this client transitively.
 
 ## Build and pack
 

@@ -4,6 +4,7 @@ using Platform.API.Models;
 
 namespace Platform.SDK.Components.BibleComponents
 {
+    /// <summary>Dropdown for selecting the active Bible version, filtered by <see cref="LanguageRange"/>.</summary>
     public partial class VersionPicker
     {
         /// <summary>
@@ -18,6 +19,7 @@ namespace Platform.SDK.Components.BibleComponents
         private string? _error;
         private string? _loadedForLanguage;
 
+        /// <inheritdoc/>
         protected override async Task OnParametersSetAsync()
         {
             // Only reload when the language actually changes — guards against

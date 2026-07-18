@@ -10,6 +10,10 @@ using Platform.SDK.Services;
 
 namespace Platform.SDK.Components.BibleComponents
 {
+    /// <summary>
+    /// Full Bible reader widget: version/book/chapter/verse pickers plus the loaded passage
+    /// display, wired together through <see cref="IBibleReaderStateService"/>.
+    /// </summary>
     public partial class BibleReader : IDisposable
     {
         // ── Injected services ────────────────────────────────────────────────
@@ -99,6 +103,7 @@ namespace Platform.SDK.Components.BibleComponents
         private int _versionId;
 
         // ── Lifecycle ────────────────────────────────────────────────────────
+        /// <inheritdoc/>
         protected override Task OnInitializedAsync()
         {
             State.OnStateChanged += OnStateChangedHandler;
@@ -164,6 +169,7 @@ namespace Platform.SDK.Components.BibleComponents
                 StateHasChanged();
             });
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             State.OnStateChanged -= OnStateChangedHandler;

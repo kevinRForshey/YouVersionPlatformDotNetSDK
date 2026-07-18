@@ -4,6 +4,7 @@ using Platform.API.Models;
 #endregion
 namespace Platform.SDK.Components.BibleComponents
 {
+    /// <summary>Dropdown for selecting a book within the currently selected Bible version.</summary>
     public partial class BookPicker
     {
         private IReadOnlyList<Book> _books = [];
@@ -11,9 +12,11 @@ namespace Platform.SDK.Components.BibleComponents
         private bool _loading;
         private string? _error;
 
+        /// <inheritdoc/>
         protected override void OnInitialized()
             => State.OnStateChanged += OnStateChangedHandler;
 
+        /// <inheritdoc/>
         protected override async Task OnParametersSetAsync()
             => await LoadBooksIfNeededAsync();
 
@@ -57,6 +60,7 @@ namespace Platform.SDK.Components.BibleComponents
                 State.SelectBook(book);
         }
 
+        /// <inheritdoc/>
         public void Dispose()
             => State.OnStateChanged -= OnStateChangedHandler;
     }

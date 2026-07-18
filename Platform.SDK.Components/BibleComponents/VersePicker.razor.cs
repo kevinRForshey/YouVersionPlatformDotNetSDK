@@ -3,6 +3,7 @@ using Platform.API.Models;
 
 namespace Platform.SDK.Components.BibleComponents
 {
+    /// <summary>Input controls for selecting a verse range within the currently selected chapter.</summary>
     public partial class VersePicker
     {
         // Used only until the real per-chapter verse count has loaded from the API.
@@ -28,6 +29,7 @@ namespace Platform.SDK.Components.BibleComponents
 
         private int MaxVerse => CurrentChapterInfo?.VerseCount ?? FallbackMaxVerse;
 
+        /// <inheritdoc/>
         protected override void OnInitialized()
         {
             // Seed _lastChapter from the current state before subscribing.
@@ -39,6 +41,7 @@ namespace Platform.SDK.Components.BibleComponents
             State.OnStateChanged += OnStateChangedHandler;
         }
 
+        /// <inheritdoc/>
         protected override async Task OnParametersSetAsync()
         {
             await LoadChaptersIfNeededAsync();
@@ -143,6 +146,7 @@ namespace Platform.SDK.Components.BibleComponents
 
         private void Commit() => State.SelectVerseRange(_verseStart, _verseEnd);
 
+        /// <inheritdoc/>
         public void Dispose()
             => State.OnStateChanged -= OnStateChangedHandler;
     }

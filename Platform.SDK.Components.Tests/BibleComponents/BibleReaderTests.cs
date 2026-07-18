@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Platform.API.Models;
-using Platform.API.OAuth;
 using Platform.SDK.Components.BibleComponents;
 using Platform.SDK.Services;
 using Xunit;
@@ -35,7 +34,7 @@ public sealed class BibleReaderTests : TestContext
     private readonly Mock<IVersionService> _versionService = new();
     private readonly Mock<IBookService> _bookService = new();
     private readonly Mock<IChapterService> _chapterService = new();
-    private readonly Mock<ITokenProvider> _tokenProvider = new();
+    private readonly Mock<IAuthSessionService> _authSessionService = new();
     private readonly Mock<IHighlightService> _highlightService = new();
 
     private void SetupSelections(BibleVersionSummary? version, Book? book, int? chapter, int? verseStart, int? verseEnd = null)
@@ -52,7 +51,7 @@ public sealed class BibleReaderTests : TestContext
         _versionService.Setup(s => s.GetVersionsAsync("en", It.IsAny<CancellationToken>())).ReturnsAsync([]);
         _bookService.Setup(s => s.GetBooksAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         _chapterService.Setup(s => s.GetChaptersAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
         _highlightService
             .Setup(s => s.GetHighlightsAsync(It.IsAny<int>(), It.IsAny<Reference>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<Highlight>)[]);
@@ -62,7 +61,7 @@ public sealed class BibleReaderTests : TestContext
         Services.AddSingleton(_versionService.Object);
         Services.AddSingleton(_bookService.Object);
         Services.AddSingleton(_chapterService.Object);
-        Services.AddSingleton(_tokenProvider.Object);
+        Services.AddSingleton(_authSessionService.Object);
         Services.AddSingleton(_highlightService.Object);
 
         return configure is null ? RenderComponent<BibleReader>() : RenderComponent<BibleReader>(configure);

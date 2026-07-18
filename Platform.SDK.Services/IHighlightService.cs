@@ -3,6 +3,7 @@ using YouVersion.UsfmReferences;
 
 namespace Platform.SDK.Services
 {
+    /// <summary>Reads and writes highlights for Bible passages.</summary>
     public interface IHighlightService
     {
         /// <summary>

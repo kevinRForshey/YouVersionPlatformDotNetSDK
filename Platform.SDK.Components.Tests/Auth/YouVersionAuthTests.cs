@@ -1,39 +1,28 @@
-using System.Text;
-using System.Text.Json;
 using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Platform.API.OAuth;
 using Platform.SDK.Components.Auth;
+using Platform.SDK.Services;
 using Xunit;
 
 namespace Platform.SDK.Components.Tests.Auth;
 
 public sealed class YouVersionAuthTests : TestContext
 {
-    private readonly Mock<ITokenProvider> _tokenProvider = new();
-
-    private static string MakeIdToken(string name)
-    {
-        string Segment(object payload) => Convert.ToBase64String(
-                Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload)))
-            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-        return $"{Segment(new { alg = "none" })}.{Segment(new { name })}.";
-    }
+    private readonly Mock<IAuthSessionService> _authSessionService = new();
 
     private IRenderedComponent<YouVersionAuth> RenderAuth(Action<ComponentParameterCollectionBuilder<YouVersionAuth>>? configure = null)
     {
-        Services.AddSingleton(_tokenProvider.Object);
+        Services.AddSingleton(_authSessionService.Object);
         return configure is null ? RenderComponent<YouVersionAuth>() : RenderComponent<YouVersionAuth>(configure);
     }
 
     [Fact]
     public void NoToken_ShowsSignInButton()
     {
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
 
         var cut = RenderAuth();
 
@@ -44,14 +33,9 @@ public sealed class YouVersionAuthTests : TestContext
     [Fact]
     public void ValidNonExpiredToken_ShowsUserNameAndSignOutButton()
     {
-        var token = new OAuthTokenResponse
-        {
-            AccessToken = "access-token",
-            IdToken = MakeIdToken("Jane Doe"),
-            ExpiresIn = 3600,
-            ReceivedAt = DateTimeOffset.UtcNow,
-        };
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(token);
+        _authSessionService
+            .Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthSession(IsSignedIn: true, DisplayName: "Jane Doe"));
 
         var cut = RenderAuth();
 
@@ -62,14 +46,7 @@ public sealed class YouVersionAuthTests : TestContext
     [Fact]
     public void ExpiredToken_ShowsSignInButton()
     {
-        var token = new OAuthTokenResponse
-        {
-            AccessToken = "access-token",
-            IdToken = MakeIdToken("Jane Doe"),
-            ExpiresIn = 60,
-            ReceivedAt = DateTimeOffset.UtcNow.AddHours(-1),
-        };
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(token);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
 
         var cut = RenderAuth();
 
@@ -79,7 +56,7 @@ public sealed class YouVersionAuthTests : TestContext
     [Fact]
     public void OAuthError_RendersDangerAlert()
     {
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
 
         var cut = RenderAuth(p => p.Add(x => x.OAuthError, "invalid_grant"));
 
@@ -89,7 +66,7 @@ public sealed class YouVersionAuthTests : TestContext
     [Fact]
     public void SignInClick_WithDelegate_InvokesDelegateInsteadOfNavigating()
     {
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
         var invoked = false;
 
         var cut = RenderAuth(p => p.Add(x => x.OnSignInRequested, EventCallback.Factory.Create(this, () => invoked = true)));
@@ -101,13 +78,9 @@ public sealed class YouVersionAuthTests : TestContext
     [Fact]
     public void SignOutClick_WithDelegate_InvokesDelegateInsteadOfNavigating()
     {
-        var token = new OAuthTokenResponse
-        {
-            AccessToken = "access-token",
-            ExpiresIn = 3600,
-            ReceivedAt = DateTimeOffset.UtcNow,
-        };
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(token);
+        _authSessionService
+            .Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthSession(IsSignedIn: true, DisplayName: null));
         var invoked = false;
 
         var cut = RenderAuth(p => p.Add(x => x.OnSignOutRequested, EventCallback.Factory.Create(this, () => invoked = true)));
@@ -119,7 +92,7 @@ public sealed class YouVersionAuthTests : TestContext
     [Fact]
     public void SignInClick_WithoutDelegate_NavigatesToLoginPath()
     {
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
 
         var cut = RenderAuth(p => p.Add(x => x.LoginPath, "/custom/login"));
 

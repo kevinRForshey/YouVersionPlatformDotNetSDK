@@ -1,14 +1,15 @@
-using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
-using Platform.API.Exceptions;
 using Platform.API.Models;
-using Platform.API.OAuth;
 using Platform.SDK.Services;
 using YouVersion.UsfmReferences;
 
 namespace Platform.SDK.Components.BibleComponents.Verses;
 
+/// <summary>
+/// Renders a passage's HTML content split into per-verse segments, with optional
+/// click-to-highlight interaction on each verse.
+/// </summary>
 public partial class VerseComponent : ComponentBase
 {
     private sealed record HighlightColorOption(string Name, string Hex);
@@ -36,11 +37,13 @@ public partial class VerseComponent : ComponentBase
     private static readonly Regex WrapperDivRegex = new("""</?div[^>]*>""", RegexOptions.Compiled);
 
     [Inject] private IHighlightService HighlightService { get; set; } = default!;
-    [Inject] private ITokenProvider TokenProvider { get; set; } = default!;
+    [Inject] private IAuthSessionService AuthSessionService { get; set; } = default!;
 
+    /// <summary>The passage to render, split into verse segments.</summary>
     [Parameter, EditorRequired]
     public Passage Passage { get; set; } = default!;
 
+    /// <summary>Copyright notice displayed below the passage, if any.</summary>
     [Parameter]
     public string? Copyright { get; set; }
 
@@ -86,6 +89,7 @@ public partial class VerseComponent : ComponentBase
     // so the API requires a signed-in OAuth session for both loading and saving them.
     private bool CanHighlight => CanShowHighlightUi && _isSignedIn;
 
+    /// <inheritdoc/>
     protected override async Task OnInitializedAsync()
     {
         if (EnableHighlighting)
@@ -94,12 +98,14 @@ public partial class VerseComponent : ComponentBase
 
     // Re-check after first interactive render — a token stored during the OAuth callback
     // round-trip may not be visible in the SSR prerender scope that OnInitializedAsync ran in.
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && EnableHighlighting)
             await CheckSignInAsync();
     }
 
+    /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
         var passageKey = $"{VersionId}:{Passage.Id}";
@@ -116,13 +122,12 @@ public partial class VerseComponent : ComponentBase
 
     private async Task CheckSignInAsync()
     {
-        var token = await TokenProvider.GetTokenAsync();
-        var signedIn = token is not null && !token.IsExpired();
+        var session = await AuthSessionService.GetCurrentSessionAsync();
 
-        if (signedIn == _isSignedIn) return;
+        if (session.IsSignedIn == _isSignedIn) return;
 
-        _isSignedIn = signedIn;
-        if (signedIn)
+        _isSignedIn = session.IsSignedIn;
+        if (_isSignedIn)
             await LoadHighlightsAsync();
 
         await InvokeAsync(StateHasChanged);
@@ -189,13 +194,14 @@ public partial class VerseComponent : ComponentBase
     private void ToggleArmedColor(string hex)
         => _armedColor = _armedColor == hex ? null : hex;
 
-    // The API can 401 even when our local expiry check thought the token was still valid — either
-    // the token was revoked server-side, or the user never granted the separate "highlights" Data
-    // Exchange permission (sign-in alone only grants identity). This is defense-in-depth alongside
-    // the sign-in gating on CanHighlight, not a substitute for it.
+    // HighlightService can still reject a call as unauthorized even when our local sign-in check
+    // thought the session was valid — either the token was revoked server-side, or the user never
+    // granted the separate "highlights" Data Exchange permission (sign-in alone only grants
+    // identity). This is defense-in-depth alongside the sign-in gating on CanHighlight, not a
+    // substitute for it.
     private static string DescribeError(Exception ex, string fallbackPrefix) =>
-        ex is YouVersionApiException { StatusCode: HttpStatusCode.Unauthorized }
-            ? "Highlights access isn't available. Please sign in and grant highlights permission when prompted."
+        ex is HighlightAccessDeniedException
+            ? ex.Message
             : $"{fallbackPrefix}: {ex.Message}";
 
     private async Task OnVerseClickAsync(int verseNumber)

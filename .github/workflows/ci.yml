@@ -38,10 +38,13 @@ jobs:
 
       - name: Test
         run: |
-          dotnet test Platform.API.Tests -c Release --verbosity normal
-          dotnet test YouVersion.UsfmReferences.Tests -c Release --verbosity normal
-          dotnet test Platform.SDK.Services.Tests -c Release --verbosity normal
-          dotnet test Platform.SDK.Components.Tests -c Release --verbosity normal
+          dotnet test Platform.API.Tests -c Release --verbosity normal --collect:"XPlat Code Coverage"
+          dotnet test YouVersion.UsfmReferences.Tests -c Release --verbosity normal --collect:"XPlat Code Coverage"
+          dotnet test Platform.SDK.Services.Tests -c Release --verbosity normal --collect:"XPlat Code Coverage"
+          dotnet test Platform.SDK.Components.Tests -c Release --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Scan for vulnerable NuGet packages
+        run: dotnet list YouVersionPlatform.slnx package --vulnerable --include-transitive
 
       - name: Pack libraries to local feed
         run: |
@@ -54,3 +57,23 @@ jobs:
 
       - name: Build PlatformTestApp
         run: dotnet build PlatformTestApp -c Release
+
+      - name: Test PlatformTestApp
+        run: dotnet test PlatformTestApp.Tests -c Release --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: '**/TestResults/**/coverage.cobertura.xml'
+          if-no-files-found: warn
+
+      - name: Summarize coverage
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.3.8
+        with:
+          reports: '**/TestResults/**/coverage.cobertura.xml'
+          targetdir: 'coveragereport'
+          reporttypes: 'MarkdownSummaryGithub'
+
+      - name: Publish coverage summary
+        run: cat coveragereport/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"

@@ -1,4 +1,4 @@
-# Unofficial-YouVersion.UsfmReferences
+# YouVersion.UsfmReferences.Unofficial
 
 Part of the [YouVersion Platform SDK for .NET](../README.md).
 
@@ -27,7 +27,7 @@ net10.0
 ## Installation
 
 ```bash
-dotnet add package Unofficial-YouVersion.UsfmReferences
+dotnet add package YouVersion.UsfmReferences.Unofficial
 ```
 
 ## Usage
@@ -52,6 +52,6 @@ all resolve to `"1SA"`. A USFM code passed in directly (e.g. `"GEN"`) is returne
 
 ## Related packages
 
-`Unofficial-YouVersion.Platform.API` depends on this package for parsing scripture references such
+`YouVersion.Platform.API.Unofficial` depends on this package for parsing scripture references such
 as `Reference` and `VerseRange` used by its passage and highlight clients. See the
 [solution README](../README.md) for the full package list and architecture overview.

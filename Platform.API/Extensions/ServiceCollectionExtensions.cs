@@ -3,6 +3,7 @@ using System.Net.Http;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 
 using Platform.API.Clients;
@@ -60,6 +61,7 @@ public static class ServiceCollectionExtensions
 
         services.AddOptions<YouVersionApiOptions>()
             .Configure(configureOptions)
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddTransient<AppKeyDelegatingHandler>();
@@ -99,6 +101,7 @@ public static class ServiceCollectionExtensions
 
         services.AddOptions<YouVersionApiOptions>()
             .Bind(configuration.GetSection(YouVersionApiOptions.SectionName))
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddTransient<AppKeyDelegatingHandler>();
@@ -144,6 +147,7 @@ public static class ServiceCollectionExtensions
 
         services.AddOptions<YouVersionOAuthOptions>()
             .Configure(configureOptions)
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         // Default in-memory token provider
@@ -206,7 +210,22 @@ public static class ServiceCollectionExtensions
         builder
             .AddHttpMessageHandler<AppKeyDelegatingHandler>()
             .AddHttpMessageHandler<OutboundRateLimitingHandler>()
-            .AddStandardResilienceHandler();
+            .AddStandardResilienceHandler()
+            // AddStandardResilienceHandler()'s own default TotalRequestTimeout/AttemptTimeout
+            // (30s/10s) are independent of HttpClient.Timeout above, so raising
+            // YouVersionApiOptions.Timeout would otherwise be silently capped by the resilience
+            // pipeline's shorter default before it ever reached the configured HttpClient.Timeout.
+            .Configure((resilienceOptions, serviceProvider) =>
+            {
+                var timeout = serviceProvider
+                    .GetRequiredService<IOptions<YouVersionApiOptions>>()
+                    .Value
+                    .Timeout;
+
+                resilienceOptions.TotalRequestTimeout.Timeout = timeout;
+                if (resilienceOptions.AttemptTimeout.Timeout > timeout)
+                    resilienceOptions.AttemptTimeout.Timeout = timeout;
+            });
 
         // Forward the public interface to the concrete implementation.
         // AddYouVersionCaching() replaces this registration with a caching decorator.
