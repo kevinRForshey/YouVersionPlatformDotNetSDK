@@ -70,3 +70,7 @@ appsettings.Development.json
 appsettings.*.local.json
 /.idea/.idea.YouVersionPlatform/.idea
 /Migrate-ToUnofficialPackages.ps1
+
+# Local AI-assistant tool state (machine-local, not project source)
+/.claude/
+/.tokensave/
