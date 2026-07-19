@@ -81,7 +81,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Summarize coverage
-        uses: danielpalme/ReportGenerator-GitHub-Action@5.3.8
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.10
         with:
           reports: '**/TestResults/**/coverage.cobertura.xml'
           targetdir: 'coveragereport'
