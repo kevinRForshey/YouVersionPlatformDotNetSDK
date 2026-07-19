@@ -47,6 +47,12 @@ CodeCoverage/
 # MSBuild Binary and Structured Log
 *.binlog
 
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
+# Stryker.NET mutation testing output
+StrykerOutput/
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

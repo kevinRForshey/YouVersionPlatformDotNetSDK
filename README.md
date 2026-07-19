@@ -13,7 +13,9 @@ reading passages, and managing highlights.
 **See it in action:** [`PlatformTestApp`](PlatformTestApp/README.md) is a full working sample app. It
 shows both the all-in-one `<BibleReader>` component and a composite reader built from the individual
 pickers, so you can see exactly how to assemble your own UI — including the OAuth/PKCE sign-in flow
-and click-to-highlight components.
+and click-to-highlight components. If you're not using Blazor,
+[`PlatformConsoleSample`](PlatformConsoleSample/README.md) is a minimal console app showing the same
+API clients called directly from a plain .NET Generic Host.
 
 ## Packages
 
@@ -65,6 +67,9 @@ Dependency direction is enforced automatically, not just by convention: an archi
 test (`Platform.API.Tests/Architecture/ApiClientBoundaryTests.cs`) fails the build if
 `PlatformTestApp` / `Platform.SDK.Components` reference `Platform.API` client types directly instead
 of going through `Platform.SDK.Services`.
+
+See [`docs/adr/`](docs/adr/README.md) for the reasoning behind this and other architectural decisions
+(caching, rate limiting, package naming/versioning, the auth session abstraction).
 
 [`PlatformTestApp`](PlatformTestApp/README.md) is a working sample host demonstrating two
 consumption patterns — the all-in-one `<BibleReader>` component (`/`) and manual step-by-step

@@ -71,14 +71,19 @@ public sealed class PassageReader(IPassageClient passageClient)
 {
     public async Task<string> GetJohn316Async(CancellationToken ct)
     {
-        var passage = await passageClient.GetPassageAsync(3034, "JHN.3.16", cancellationToken: ct);
+        var passage = await passageClient.GetPassageAsync(3034, Reference.FromString("JHN.3.16"), cancellationToken: ct);
         return passage.Content;
     }
 }
 ```
 
+`Reference` (from `YouVersion.UsfmReferences`) normalizes and validates the USFM string before it's
+sent to the API — there's no implicit conversion from a raw `string`.
+
 See [`Platform.API/README.md`](../Platform.API/README.md#common-usage-examples) for more usage
-examples, including books/chapters/verses structure and creating highlights.
+examples, including books/chapters/verses structure and creating highlights, or
+[`PlatformConsoleSample`](../PlatformConsoleSample/README.md) for a complete runnable version of
+this guide's example.
 
 ## Next steps
 
