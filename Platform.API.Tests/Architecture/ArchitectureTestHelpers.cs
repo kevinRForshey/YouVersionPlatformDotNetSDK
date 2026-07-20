@@ -33,12 +33,24 @@ internal static class ArchitectureTestHelpers
     public static IEnumerable<string> GetProjectReferences(string csprojPath)
     {
         var text = File.ReadAllText(csprojPath);
-        var matches = Regex.Matches(text, @"<ProjectReference\s+Include=""([^""]+)""");
+        var matches = Regex.Matches(text, @"<ProjectReference\s+([^>]*?)/?>");
         foreach (Match match in matches)
         {
+            var attributes = match.Groups[1].Value;
+
+            // OutputItemType="Analyzer" ReferenceOutputAssembly="false" references (e.g. Platform.API.Analyzers)
+            // are dev-time tooling, not a real assembly dependency -- they don't participate in the
+            // Models -> API -> Services -> Components -> PlatformTestApp layering this graph enforces.
+            if (Regex.IsMatch(attributes, @"ReferenceOutputAssembly\s*=\s*""false"""))
+                continue;
+
+            var includeMatch = Regex.Match(attributes, @"Include\s*=\s*""([^""]+)""");
+            if (!includeMatch.Success)
+                continue;
+
             // csproj paths use '\' regardless of OS; Path.GetFileNameWithoutExtension only
             // splits on '/' on non-Windows, so normalize separators before extracting the name.
-            var normalized = match.Groups[1].Value.Replace('\\', '/');
+            var normalized = includeMatch.Groups[1].Value.Replace('\\', '/');
             yield return Path.GetFileNameWithoutExtension(normalized);
         }
     }

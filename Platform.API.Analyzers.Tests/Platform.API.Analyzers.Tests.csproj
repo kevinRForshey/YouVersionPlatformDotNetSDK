@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Platform.API.Analyzers.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Explicit pins: without them NuGet resolves the test harness's own lowest-supported
+         (much older) Microsoft.CodeAnalysis.CSharp transitive dependency instead of a
+         net10.0-compatible one. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+
+    <!-- The framework-agnostic testing package, not "...CSharp.Analyzer.Testing.XUnit": that
+         meta-package pulls in Microsoft.CodeAnalysis.Testing.Verifiers.XUnit, which was compiled
+         against xunit.assert 2.3.0's EqualException and calls its constructor directly; the
+         repo's xunit 2.9.3 removed that constructor, so every diagnostic-mismatch assertion would
+         throw MissingMethodException at runtime instead of a real test failure. Verification.cs
+         implements IVerifier against the stable xunit.Assert API instead. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Platform.API.Analyzers\Platform.API.Analyzers.csproj" />
+  </ItemGroup>
+
+</Project>

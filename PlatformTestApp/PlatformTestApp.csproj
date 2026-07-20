@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Platform.SDK.Components\Platform.SDK.Components.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Platform.API.Analyzers\Platform.API.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
 </Project>

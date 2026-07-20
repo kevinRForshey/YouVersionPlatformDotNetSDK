@@ -38,3 +38,16 @@ dotnet_naming_style.prefix_interface_with_i.capitalization = pascal_case
 
 [*.razor]
 indent_size = 4
+
+# YVP0001 (Platform.API.Analyzers) forbids direct references to Platform.API.Clients/OAuth/Exceptions
+# outside Platform.API/Platform.SDK.Services. These three PlatformTestApp files are the composition-root
+# OAuth/PKCE handshake and the app's ITokenProvider extension point -- legitimate exceptions, not
+# boundary violations (see docs/adr/0001-layered-architecture-with-enforced-boundaries.md).
+[PlatformTestApp/Program.cs]
+dotnet_diagnostic.YVP0001.severity = none
+
+[PlatformTestApp/Auth/OAuthCallbackHandlers.cs]
+dotnet_diagnostic.YVP0001.severity = none
+
+[PlatformTestApp/Auth/SessionTokenProvider.cs]
+dotnet_diagnostic.YVP0001.severity = none
