@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet package identity -->
-    <PackageId>YouVersion.Platform.API.Models.Unofficial</PackageId>
+    <PackageId>Unofficial-YouVersion.Platform.API.Models</PackageId>
     <Authors>Kevin Forshey</Authors>
     <Product>YouVersion Platform API Models</Product>
     <Description>Domain model types (Versions, Books, Chapters, Verses, Passages, Highlights) for the YouVersion Platform REST API.</Description>

@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
 
       <!-- NuGet package identity -->
-      <PackageId>YouVersion.Platform.SDK.Components.Unofficial</PackageId>
+      <PackageId>Unofficial-YouVersion.Platform.SDK.Components</PackageId>
       <Authors>Kevin Forshey</Authors>
       <Product>YouVersion Platform SDK Components</Product>
       <Description>Blazor UI components for the YouVersion Platform SDK. Provides reusable Bible reader, click-to-highlight passage display, highlight list, and related components.</Description>
