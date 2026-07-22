@@ -64,6 +64,7 @@ nunit-*.xml
 /.vs
 /ARCHITECTURE_REVIEW.md
 /ARCHITECTURE_REVIEW.pdf
+/docs/nuget-release-guide.pdf
 
 # Local secrets / environment-specific settings
 appsettings.Development.json
