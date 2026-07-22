@@ -14,8 +14,13 @@
     <!-- Versioned independently of the MinVer-driven Platform.* packages: this is a
          standalone port tracking the upstream youversion/usfm-references release number. -->
     <MinVerSkip>true</MinVerSkip>
-    <PackageId>Unofficial-YouVersion.UsfmReferences</PackageId>
+    <PackageId>YouVersion.UsfmReferences.Unofficial</PackageId>
     <Version>3.1.1</Version>
+
+    <!-- This package's version tracks upstream, not the repo-wide MinVer/tag scheme, so it
+         needs its own package-validation baseline instead of Directory.Build.props's 0.1.x
+         one. Bump this to match Version whenever a new release is published. -->
+    <PackageValidationBaselineVersion>3.1.1</PackageValidationBaselineVersion>
 
     <Title>YouVersion USFM References</Title>
     <Authors>Kevin Forshey</Authors>
@@ -36,9 +41,7 @@
 
     <PackageReleaseNotes>Initial .NET release. Feature-equivalent port of usfm-references 3.1.1.</PackageReleaseNotes>
 
-    <!-- Optional package icon: drop an icon.png next to this file and uncomment.
     <PackageIcon>icon.png</PackageIcon>
-    -->
   </PropertyGroup>
 
   <!-- ===================== Build reproducibility & source debugging ===================== -->
@@ -55,6 +58,7 @@
   <!-- Pack the solution-level README into the package root. -->
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

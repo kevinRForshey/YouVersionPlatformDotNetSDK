@@ -3,12 +3,18 @@
     Cuts a tagged release that triggers the existing GitHub Actions publish workflow.
 
 .DESCRIPTION
-    This script does NOT push packages to NuGet.org itself — that's done by
+    This is the source of truth for cutting a release, not a manual fallback --
+    nuget-publish.yml only ever runs as a result of the GitHub Release this script
+    creates. It does NOT push packages to NuGet.org itself; that's done by
     .github/workflows/nuget-publish.yml, which runs on GitHub's runners using the
     NUGET_API_KEY repo secret. What this script automates is everything that leads
     up to that: preflight checks, an optional local build/test/pack dry run (to
     catch problems before anything touches the remote), tagging, pushing the tag,
     and creating the GitHub Release that fires the workflow.
+
+    Rebuild-Packages.ps1 / rebuild-nuget-packages.sh are unrelated: they repack
+    projects into the local NuGet feed for day-to-day development and have no
+    connection to tagging, GitHub Releases, or nuget-publish.yml.
 
     Steps:
       1. Verify prerequisites (git/gh/dotnet on PATH, gh authenticated).

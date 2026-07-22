@@ -6,6 +6,8 @@ using YouVersion.UsfmReferences;
 
 namespace Platform.SDK.Services
 {
+    /// <inheritdoc/>
+    /// <param name="client">The passage API client used to retrieve passages.</param>
     public sealed class PassageService(IPassageClient client) : IPassageService
     {
         /// <summary>

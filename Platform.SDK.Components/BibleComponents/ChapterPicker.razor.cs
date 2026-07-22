@@ -2,8 +2,10 @@
 
 namespace Platform.SDK.Components.BibleComponents
 {
+    /// <summary>Dropdown for selecting a chapter within the currently selected book.</summary>
     public partial class ChapterPicker
     {
+        /// <inheritdoc/>
         protected override void OnInitialized()
        => State.OnStateChanged += OnStateChangedHandler;
 
@@ -16,6 +18,7 @@ namespace Platform.SDK.Components.BibleComponents
                 State.SelectChapter(ch);
         }
 
+        /// <inheritdoc/>
         public void Dispose()
             => State.OnStateChanged -= OnStateChangedHandler;
     }

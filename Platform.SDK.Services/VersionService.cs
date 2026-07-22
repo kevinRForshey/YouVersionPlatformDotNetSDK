@@ -3,8 +3,11 @@ using Platform.API.Models;
 
 namespace Platform.SDK.Services
 {
+    /// <inheritdoc/>
+    /// <param name="client">The Bible API client used to retrieve versions.</param>
     public sealed class VersionService(IBibleClient client) : IVersionService
     {
+        /// <inheritdoc/>
         public async Task<IReadOnlyList<BibleVersionSummary>> GetVersionsAsync(
             string languageRange = "en",
             CancellationToken cancellationToken = default)

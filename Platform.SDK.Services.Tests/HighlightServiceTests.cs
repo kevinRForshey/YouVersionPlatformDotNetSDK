@@ -1,6 +1,8 @@
+using System.Net;
 using FluentAssertions;
 using Moq;
 using Platform.API.Clients;
+using Platform.API.Exceptions;
 using Platform.API.Models;
 using Xunit;
 using YouVersion.UsfmReferences;
@@ -65,6 +67,20 @@ public sealed class HighlightServiceTests
         var act = () => sut.GetHighlightsAsync(0, Chapter3);
 
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public async Task GetHighlightsAsync_WhenClientThrowsUnauthorized_ThrowsHighlightAccessDeniedException()
+    {
+        var client = new Mock<IHighlightClient>();
+        client.Setup(c => c.GetHighlightsAsync(3034, Chapter3, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new YouVersionApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
+
+        var sut = new HighlightService(client.Object);
+
+        var act = () => sut.GetHighlightsAsync(3034, Chapter3);
+
+        await act.Should().ThrowAsync<HighlightAccessDeniedException>();
     }
 
     // -------------------------------------------------------------------
@@ -136,6 +152,20 @@ public sealed class HighlightServiceTests
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
+    [Fact]
+    public async Task CreateOrUpdateHighlightAsync_WhenClientThrowsUnauthorized_ThrowsHighlightAccessDeniedException()
+    {
+        var client = new Mock<IHighlightClient>();
+        client.Setup(c => c.CreateOrUpdateHighlightAsync(3034, John316, "44aa44", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new YouVersionApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
+
+        var sut = new HighlightService(client.Object);
+
+        var act = () => sut.CreateOrUpdateHighlightAsync(3034, John316, "44aa44");
+
+        await act.Should().ThrowAsync<HighlightAccessDeniedException>();
+    }
+
     // -------------------------------------------------------------------
     // ClearHighlightsAsync
     // -------------------------------------------------------------------
@@ -179,5 +209,19 @@ public sealed class HighlightServiceTests
         var act = () => sut.ClearHighlightsAsync(3034, John316);
 
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task ClearHighlightsAsync_WhenClientThrowsUnauthorized_ThrowsHighlightAccessDeniedException()
+    {
+        var client = new Mock<IHighlightClient>();
+        client.Setup(c => c.ClearHighlightsAsync(3034, John316, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new YouVersionApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
+
+        var sut = new HighlightService(client.Object);
+
+        var act = () => sut.ClearHighlightsAsync(3034, John316);
+
+        await act.Should().ThrowAsync<HighlightAccessDeniedException>();
     }
 }

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet package identity -->
-    <PackageId>Unofficial-YouVersion.Platform.API.Models</PackageId>
+    <PackageId>YouVersion.Platform.API.Models.Unofficial</PackageId>
     <Authors>Kevin Forshey</Authors>
     <Product>YouVersion Platform API Models</Product>
     <Description>Domain model types (Versions, Books, Chapters, Verses, Passages, Highlights) for the YouVersion Platform REST API.</Description>
@@ -15,11 +15,11 @@
     <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
 
     <!-- Build quality -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- Source link / deterministic builds -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="..\icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>

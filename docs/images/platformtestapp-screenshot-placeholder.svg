@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5"/>
+  <rect x="8" y="8" width="784" height="434" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="10,8"/>
+  <text x="400" y="210" text-anchor="middle" font-family="sans-serif" font-size="28" fill="#555">
+    Screenshot placeholder
+  </text>
+  <text x="400" y="248" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#777">
+    Run PlatformTestApp locally to see the reader UI
+  </text>
+</svg>

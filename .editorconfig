@@ -1,0 +1,53 @@
+# See https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets,json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+indent_size = 4
+csharp_using_directive_placement = outside_namespace_declarations:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:suggestion
+dotnet_sort_system_directives_first = true
+
+# var preferences
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Naming: interfaces start with I
+dotnet_naming_rule.interface_should_be_prefixed_with_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_prefixed_with_i.symbols = interface_symbol
+dotnet_naming_rule.interface_should_be_prefixed_with_i.style = prefix_interface_with_i
+dotnet_naming_symbols.interface_symbol.applicable_kinds = interface
+dotnet_naming_style.prefix_interface_with_i.required_prefix = I
+dotnet_naming_style.prefix_interface_with_i.capitalization = pascal_case
+
+[*.razor]
+indent_size = 4
+
+# YVP0001 (Platform.API.Analyzers) forbids direct references to Platform.API.Clients/OAuth/Exceptions
+# outside Platform.API/Platform.SDK.Services. These three PlatformTestApp files are the composition-root
+# OAuth/PKCE handshake and the app's ITokenProvider extension point -- legitimate exceptions, not
+# boundary violations (see docs/adr/0001-layered-architecture-with-enforced-boundaries.md).
+[PlatformTestApp/Program.cs]
+dotnet_diagnostic.YVP0001.severity = none
+
+[PlatformTestApp/Auth/OAuthCallbackHandlers.cs]
+dotnet_diagnostic.YVP0001.severity = none
+
+[PlatformTestApp/Auth/SessionTokenProvider.cs]
+dotnet_diagnostic.YVP0001.severity = none

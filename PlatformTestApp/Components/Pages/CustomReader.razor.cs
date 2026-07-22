@@ -62,10 +62,7 @@ namespace PlatformTestApp.Components.Pages
         }
 
         private async Task<bool> CheckSignedInAsync()
-        {
-            var token = await TokenProvider.GetTokenAsync();
-            return token is not null && !token.IsExpired();
-        }
+            => (await AuthSessionService.GetCurrentSessionAsync()).IsSignedIn;
 
         // A plain <a href> here gets swallowed by Blazor's enhanced navigation, which fetches the
         // response and tries to diff it into the page instead of following the server redirect to

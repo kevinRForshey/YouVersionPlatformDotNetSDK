@@ -3,12 +3,11 @@
 @using Platform.SDK.Components.BibleComponents.Verses
 @using Platform.SDK.Services
 @using Platform.API.Models
-@using Platform.API.OAuth
 @using PlatformTestApp.Auth
 @inject IBibleReaderStateService State
 @inject IPassageService PassageService
 @inject HighlightsPermissionStore PermissionStore
-@inject ITokenProvider TokenProvider
+@inject IAuthSessionService AuthSessionService
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 @implements IDisposable

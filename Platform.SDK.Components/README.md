@@ -1,4 +1,4 @@
-# Unofficial-YouVersion.Platform.SDK.Components
+# YouVersion.Platform.SDK.Components.Unofficial
 
 Part of the [YouVersion Platform SDK for .NET](../README.md).
 
@@ -9,10 +9,10 @@ Provides reusable Bible reader and related Blazor components (version/book/chapt
 ## Installation
 
 ```bash
-dotnet add package Unofficial-YouVersion.Platform.SDK.Components
+dotnet add package YouVersion.Platform.SDK.Components.Unofficial
 ```
 
-This package transitively installs [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md), [`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md), and [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md).
+This package transitively installs [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md), [`YouVersion.Platform.API.Unofficial`](../Platform.API/README.md), and [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md).
 
 Register the underlying services once at startup:
 
@@ -317,9 +317,9 @@ prerender scope the component first ran in, so this avoids a stale "signed out" 
 
 ## Related packages
 
-- [`Unofficial-YouVersion.Platform.API.Models`](../Platform.API.Models/README.md) — the model types (`Passage`, `Highlight`, etc.) these components render.
-- [`Unofficial-YouVersion.Platform.API`](../Platform.API/README.md) — the raw HTTP client and OAuth setup underneath this package.
-- [`Unofficial-YouVersion.Platform.SDK.Services`](../Platform.SDK.Services/README.md) — the service layer these components inject and consume.
+- [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md) — the model types (`Passage`, `Highlight`, etc.) these components render.
+- [`YouVersion.Platform.API.Unofficial`](../Platform.API/README.md) — the raw HTTP client and OAuth setup underneath this package.
+- [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md) — the service layer these components inject and consume.
 
 ## License
 

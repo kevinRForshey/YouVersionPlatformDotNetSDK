@@ -10,6 +10,11 @@ throughout [`Platform.SDK.Components/README.md`](../Platform.SDK.Components/READ
 [OAuth/PKCE guide](../docs/oauth-guide.md) as the reference implementation — this document explains
 what it demonstrates and how to run it; the packages it consumes document their own APIs in depth.
 
+![PlatformTestApp screenshot placeholder](../docs/images/platformtestapp-screenshot-placeholder.svg)
+
+*Placeholder — this SDK's primary surface is the API/component libraries themselves, not this sample
+app, so a real screenshot isn't a priority. Run the app locally (below) to see the live UI.*
+
 ## What it demonstrates
 
 | Page | Route | Shows |

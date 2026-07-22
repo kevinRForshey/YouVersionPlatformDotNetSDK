@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Platform.API.Models;
-using Platform.API.OAuth;
 using Platform.SDK.Components.BibleComponents.Verses;
 using Platform.SDK.Services;
 using Xunit;
@@ -41,15 +40,8 @@ public sealed class VerseComponentTests : TestContext
         Color = color,
     };
 
-    private static OAuthTokenResponse MakeValidToken() => new()
-    {
-        AccessToken = "valid-access-token",
-        ExpiresIn = 3600,
-        ReceivedAt = DateTimeOffset.UtcNow,
-    };
-
     private readonly Mock<IHighlightService> _highlightService = new();
-    private readonly Mock<ITokenProvider> _tokenProvider = new();
+    private readonly Mock<IAuthSessionService> _authSessionService = new();
 
     public VerseComponentTests()
     {
@@ -59,13 +51,15 @@ public sealed class VerseComponentTests : TestContext
 
         // Signed in by default so existing highlighting tests exercise the interactive toolbar;
         // sign-out behavior is covered by its own tests below.
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(MakeValidToken());
+        _authSessionService
+            .Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthSession(IsSignedIn: true, DisplayName: "Jane Doe"));
     }
 
     private void RegisterServices()
     {
         Services.AddSingleton(_highlightService.Object);
-        Services.AddSingleton(_tokenProvider.Object);
+        Services.AddSingleton(_authSessionService.Object);
     }
 
     private IRenderedComponent<VerseComponent> RenderVerse(
@@ -124,7 +118,7 @@ public sealed class VerseComponentTests : TestContext
 
         cut.FindAll(".highlight-toolbar").Should().BeEmpty();
         cut.FindAll(".verse-segment").Should().HaveCount(2);
-        _tokenProvider.Verify(t => t.GetTokenAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _authSessionService.Verify(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _highlightService.Verify(
             s => s.GetHighlightsAsync(It.IsAny<int>(), It.IsAny<Reference>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -133,7 +127,7 @@ public sealed class VerseComponentTests : TestContext
     [Fact]
     public void SignedOut_ShowsSignInPromptInsteadOfSwatches()
     {
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
 
         var cut = RenderVerse();
 
@@ -144,7 +138,7 @@ public sealed class VerseComponentTests : TestContext
     [Fact]
     public void SignedOut_DoesNotLoadHighlights()
     {
-        _tokenProvider.Setup(t => t.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync((OAuthTokenResponse?)null);
+        _authSessionService.Setup(s => s.GetCurrentSessionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(AuthSession.SignedOut);
 
         RenderVerse();
 
@@ -271,8 +265,7 @@ public sealed class VerseComponentTests : TestContext
     {
         _highlightService
             .Setup(s => s.CreateOrUpdateHighlightAsync(3034, It.IsAny<Reference>(), "ffd54f", It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Platform.API.Exceptions.YouVersionApiException(
-                System.Net.HttpStatusCode.Unauthorized, "failed", null));
+            .ThrowsAsync(new HighlightAccessDeniedException("Highlights access isn't available. Please sign in and grant highlights permission when prompted."));
 
         var cut = RenderVerse();
         cut.Find("button[title='Yellow']").Click();

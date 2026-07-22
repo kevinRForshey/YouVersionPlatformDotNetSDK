@@ -2,6 +2,10 @@
   <Project Path="Platform.API.Models/Platform.API.Models.csproj" Id="7d23a20f-2b28-42de-bf45-bfe53ba0fc5d" />
   <Project Path="Platform.API.Tests/Platform.API.Tests.csproj" Id="3f2fd93b-9fbe-4f48-9eb8-cd806f2f66ce" />
   <Project Path="Platform.API/Platform.API.csproj" Id="a35d6648-dbb9-47dc-a3d3-e0b7f003d365" />
+  <Project Path="Platform.API.Analyzers/Platform.API.Analyzers.csproj" />
+  <Project Path="Platform.API.Analyzers.Tests/Platform.API.Analyzers.Tests.csproj" />
+  <Project Path="Platform.API.Benchmarks/Platform.API.Benchmarks.csproj" />
+  <Project Path="PlatformConsoleSample/PlatformConsoleSample.csproj" />
   <Project Path="Platform.SDK.Components/Platform.SDK.Components.csproj" Id="a99dbf46-788a-4d42-ae2f-4a13d4f37404" />
   <Project Path="Platform.SDK.Components.Tests/Platform.SDK.Components.Tests.csproj" />
   <Project Path="Platform.SDK.Services/Platform.SDK.Services.csproj" Id="c8d64e4f-f7f2-4f2f-9a86-26d4e1b8a8d7" />

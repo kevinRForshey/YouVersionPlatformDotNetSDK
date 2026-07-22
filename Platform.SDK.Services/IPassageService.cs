@@ -3,8 +3,17 @@ using YouVersion.UsfmReferences;
 
 namespace Platform.SDK.Services
 {
+    /// <summary>Retrieves Bible passages.</summary>
     public interface IPassageService
     {
+        /// <summary>
+        /// Retrieves a Bible passage using a typed USFM reference.
+        /// </summary>
+        /// <param name="versionId">The numeric Bible version id.</param>
+        /// <param name="reference">The USFM passage reference.</param>
+        /// <param name="options">Optional passage request options (format, headings, notes).</param>
+        /// <param name="cancellationToken">Cancellation token for the operation.</param>
+        /// <returns>The requested passage.</returns>
         Task<Passage> GetPassageAsync(
             int versionId,
             Reference reference,

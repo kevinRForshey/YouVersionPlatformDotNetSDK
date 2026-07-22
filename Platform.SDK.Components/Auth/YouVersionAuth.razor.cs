@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Components;
-using Platform.API.OAuth;
+using Platform.SDK.Services;
 
 namespace Platform.SDK.Components.Auth;
 
 /// <summary>
 /// Self-contained YouVersion Platform OAuth widget.
-/// Reads the current token from <see cref="ITokenProvider"/> and renders
+/// Reads the current sign-in state from <see cref="IAuthSessionService"/> and renders
 /// sign-in / sign-out controls with the signed-in user's display name.
 /// </summary>
 /// <remarks>
@@ -16,7 +16,7 @@ namespace Platform.SDK.Components.Auth;
 /// </remarks>
 public partial class YouVersionAuth
 {
-    [Inject] private ITokenProvider TokenProvider { get; set; } = default!;
+    [Inject] private IAuthSessionService AuthSessionService { get; set; } = default!;
     [Inject] private NavigationManager Nav { get; set; } = default!;
 
     /// <summary>Invoked when the user clicks "Sign in". Falls back to navigating to <see cref="LoginPath"/>.</summary>
@@ -46,11 +46,13 @@ public partial class YouVersionAuth
     private bool _isSignedIn;
     private string? _userName;
 
+    /// <inheritdoc/>
     protected override async Task OnInitializedAsync()
         => await CheckSignInAsync();
 
     // Re-check after first interactive render — a token stored during the OAuth callback
     // round-trip may not be visible in the SSR prerender scope.
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -59,14 +61,12 @@ public partial class YouVersionAuth
 
     private async Task CheckSignInAsync()
     {
-        var token = await TokenProvider.GetTokenAsync();
-        var signedIn = token is not null && !token.IsExpired();
-        var userName = token?.GetDisplayIdentity();
+        var session = await AuthSessionService.GetCurrentSessionAsync();
 
-        if (signedIn != _isSignedIn || userName != _userName)
+        if (session.IsSignedIn != _isSignedIn || session.DisplayName != _userName)
         {
-            _isSignedIn = signedIn;
-            _userName = userName;
+            _isSignedIn = session.IsSignedIn;
+            _userName = session.DisplayName;
             await InvokeAsync(StateHasChanged);
         }
     }

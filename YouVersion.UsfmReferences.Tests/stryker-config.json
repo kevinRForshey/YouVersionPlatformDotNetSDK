@@ -1,0 +1,16 @@
+{
+  "stryker-config": {
+    "project": "YouVersion.UsfmReferences.csproj",
+    "mutation-level": "Standard",
+    "reporters": [
+      "progress",
+      "html",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 80,
+      "low": 60,
+      "break": 0
+    }
+  }
+}

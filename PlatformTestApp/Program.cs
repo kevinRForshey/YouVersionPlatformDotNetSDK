@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.FluentUI.AspNetCore.Components;
 
 using Platform.API.Extensions;
@@ -9,8 +8,6 @@ using PlatformTestApp.Auth;
 using PlatformTestApp.Components;
 
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 #region Add Services
@@ -73,138 +70,29 @@ app.UseSession();
 
 #endregion
 // YouVersion redirects back to http://localhost:52413?code=...&state=...
-// Park the code in the session then hand off to the callback endpoint which has a real HttpContext.
+// Each callback shape is handled by its own method in OAuthCallbackHandlers; this stays a flat
+// dispatch list so a new callback shape is one more line here, not one more inline `if` block.
 app.Use(async (HttpContext ctx, RequestDelegate next) =>
 {
-    if (ctx.Request.Path == "/" && ctx.Request.Query.Count > 0)
+    if (ctx.Request.Path != "/" || ctx.Request.Query.Count == 0)
     {
-        // Every callback shape lands here first; log so an unhandled shape (e.g. ?error=...)
-        // is visible instead of silently falling through to the home page.
-        ctx.RequestServices.GetRequiredService<ILogger<Program>>()
-            .LogDebug("Landed on \"/\" with query: {Query}", ctx.Request.QueryString);
-    }
-
-    if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("code"))
-    {
-        ctx.Session.SetString("oauth_code", ctx.Request.Query["code"].ToString());
-        ctx.Session.SetString("oauth_state_return", ctx.Request.Query["state"].ToString());
-        // Comma-separated grant result, present only when YouVersion folds it into this callback
-        // instead of sending a separate data_exchange_status redirect (both shapes occur live).
-        // Empty string = requested but denied; absent = not requested.
-        if (ctx.Request.Query.ContainsKey("granted_permissions"))
-            ctx.Session.SetString("oauth_granted_permissions", ctx.Request.Query["granted_permissions"].ToString());
-        ctx.Response.Redirect("/auth/callback-complete");
+        await next(ctx);
         return;
     }
 
-    // Standalone Data Exchange callback shape: consent result arrives as a separate hit on "/"
-    // rather than folded into the code callback above (see ParseDataExchangeCallback). Confirmed
-    // reachable via live sign-in — don't remove without re-verifying against a real browser flow.
-    if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("data_exchange_status"))
-    {
-        var oauthClient = ctx.RequestServices.GetRequiredService<IYouVersionOAuthClient>();
-        var result = oauthClient.ParseDataExchangeCallback(new Uri(ctx.Request.GetEncodedUrl()));
+    OAuthCallbackHandlers.LogIncomingQuery(ctx);
 
-        var granted = result.Status == DataExchangeStatus.Granted;
-        await ctx.RequestServices.GetRequiredService<HighlightsPermissionStore>().SetGrantedAsync(granted);
-
-        var redirect = $"/?auth_mode=code&highlights={(granted ? "granted" : "denied")}";
-        if (result.Status == DataExchangeStatus.Error)
-            redirect += $"&oauth_error={Uri.EscapeDataString(result.ErrorDescription ?? result.Error ?? "Data exchange approval failed.")}";
-
-        ctx.Response.Redirect(redirect);
+    if (OAuthCallbackHandlers.TryHandleAuthorizationCodeCallback(ctx))
         return;
-    }
 
-    // Browser clients get identity fields back, not a redeemable `code`:
-    //   ?profile_picture=...&state=...&user_email=...&user_name=...&yvp_id=...&granted_permissions=highlights
-    // Normal step-1 behavior (https://developers.youversion.com/sign-in-apis), not a fallback.
-    // `yvp_id` only appears on a genuine YouVersion redirect, so it can't collide with the
-    // dev-only shortcut below. CompleteIdentityCallbackAsync runs steps 2-3 and returns a real token.
-    if (ctx.Request.Path == "/" && ctx.Request.Query.ContainsKey("yvp_id"))
-    {
-        var expectedState = ctx.Session.GetString("oauth_state");
-        var returnedState = ctx.Request.Query["state"].ToString();
-        var oauthClient = ctx.RequestServices.GetRequiredService<IYouVersionOAuthClient>();
-        if (!oauthClient.ValidateState(expectedState, returnedState))
-        {
-            ctx.Response.Redirect($"/?oauth_error={Uri.EscapeDataString("State mismatch — possible CSRF attempt. Please try signing in again.")}&auth_mode=direct");
-            return;
-        }
-
-        var verifier = ctx.Session.GetString("pkce_verifier");
-        ctx.Session.Remove("oauth_state");
-        ctx.Session.Remove("pkce_verifier");
-
-        if (string.IsNullOrEmpty(verifier))
-        {
-            ctx.Response.Redirect($"/?oauth_error={Uri.EscapeDataString("Session expired mid sign-in. Please try again.")}");
-            return;
-        }
-
-        var userName = ctx.Request.Query["user_name"].ToString();
-        var userEmail = ctx.Request.Query["user_email"].ToString();
-        var profilePicture = ctx.Request.Query["profile_picture"].ToString();
-        var yvpId = ctx.Request.Query["yvp_id"].ToString();
-
-        try
-        {
-            await oauthClient.CompleteIdentityCallbackAsync(
-                returnedState, yvpId, userName, userEmail, profilePicture, verifier);
-        }
-        catch (Exception ex)
-        {
-            ctx.RequestServices.GetRequiredService<ILogger<Program>>()
-                .LogError(ex, "Completing the identity callback failed.");
-            ctx.Response.Redirect($"/?oauth_error={Uri.EscapeDataString("Sign-in failed while completing the callback. Please try again.")}");
-            return;
-        }
-
-        // Absent = not requested this round trip, NOT denied — treating it as denied would wipe
-        // out an existing grant from a prior /auth/request-highlights approval.
-        if (ctx.Request.Query.ContainsKey("granted_permissions"))
-        {
-            var highlightsGranted = ctx.Request.Query["granted_permissions"].ToString()
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Contains("highlights", StringComparer.OrdinalIgnoreCase);
-            await ctx.RequestServices.GetRequiredService<HighlightsPermissionStore>().SetGrantedAsync(highlightsGranted);
-            ctx.Response.Redirect($"/?auth_mode=direct&highlights={(highlightsGranted ? "granted" : "denied")}");
-            return;
-        }
-
-        ctx.Response.Redirect("/?auth_mode=direct");
+    if (await OAuthCallbackHandlers.TryHandleDataExchangeCallbackAsync(ctx))
         return;
-    }
 
-    // Dev-only shortcut to exercise the UI without a live OAuth round trip. Builds an unsigned
-    // token from raw query params — must never be reachable outside Development, since anyone
-    // could pass ?dev_signin=1&user_name=admin and appear signed in. Gated on the `dev_signin`
-    // marker so it can't collide with a real callback, which is keyed on `yvp_id` instead.
-    if (app.Environment.IsDevelopment() && ctx.Request.Path == "/" &&
-        ctx.Request.Query.ContainsKey("dev_signin"))
-    {
-        var userName = ctx.Request.Query["user_name"].ToString();
-        var userEmail = ctx.Request.Query["user_email"].ToString();
-
-        var tokenProvider = ctx.RequestServices.GetRequiredService<ITokenProvider>();
-        var claims = new Dictionary<string, string>();
-        if (!string.IsNullOrWhiteSpace(userName))
-            claims["name"] = userName;
-        if (!string.IsNullOrWhiteSpace(userEmail))
-            claims["email"] = userEmail;
-
-        var syntheticIdToken = BuildUnsignedJwt(claims);
-        await tokenProvider.StoreTokenAsync(new OAuthTokenResponse
-        {
-            AccessToken = "oauth-session-user",
-            IdToken = syntheticIdToken,
-            ExpiresIn = 3600,
-            ReceivedAt = DateTimeOffset.UtcNow
-        });
-
-        ctx.Response.Redirect("/?auth_mode=direct");
+    if (await OAuthCallbackHandlers.TryHandleIdentityCallbackAsync(ctx))
         return;
-    }
+
+    if (await OAuthCallbackHandlers.TryHandleDevSignInAsync(ctx, app.Environment.IsDevelopment()))
+        return;
 
     await next(ctx);
 });
@@ -313,15 +201,4 @@ app.Run();
 
 static string Base64Url(byte[] bytes) =>
     Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-static string BuildUnsignedJwt(IReadOnlyDictionary<string, string> claims)
-{
-    var payloadJson = JsonSerializer.Serialize(claims);
-    var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(payloadJson))
-        .TrimEnd('=')
-        .Replace('+', '-')
-        .Replace('/', '_');
-
-    return $"header.{payload}.signature";
-}
 
