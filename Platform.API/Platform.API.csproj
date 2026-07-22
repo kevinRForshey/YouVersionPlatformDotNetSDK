@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet package identity -->
-    <PackageId>YouVersion.Platform.API.Unofficial</PackageId>
+    <PackageId>Unofficial-YouVersion.Platform.API</PackageId>
     <Authors>Kevin Forshey</Authors>
     <Product>YouVersion Platform API Client</Product>
     <Description>HTTP client SDK for the YouVersion Platform REST API. Provides typed clients for Bibles, Passages, and Highlights with built-in Microsoft.Extensions.Http integration and DI support.</Description>
