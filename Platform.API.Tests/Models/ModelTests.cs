@@ -139,7 +139,7 @@ public sealed class BibleVersionTests
         version.Books.Should().HaveCount(2);
         version.Books[0].Should().Be("GEN");
         version.PublisherUrl.Should().BeNull();
-        version.YouVersionDeepLink.Should().Contain("3034");
+        version.BibleDeepLink.Should().Contain("3034");
     }
 
     [Fact]

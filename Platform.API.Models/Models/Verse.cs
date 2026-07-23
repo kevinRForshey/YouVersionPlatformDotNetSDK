@@ -9,9 +9,9 @@ public sealed record Verse
 {
     /// <summary>Gets the USFM verse identifier (e.g. <c>JHN.3.16</c>).</summary>
     /// <remarks>
-    /// This is a normalized, validated USFM verse reference from the YouVersion Platform API.
+    /// This is a normalized, validated USFM verse reference from the Platform API.
     /// All USFM references passed to passage and highlight operations are validated against
-    /// YouVersion.UsfmReferences.BookCatalog before being sent to the API.
+    /// BiblePlatform.UsfmReferences.BookCatalog before being sent to the API.
     /// </remarks>
     [JsonPropertyName("usfm")]
     public string Usfm { get; init; } = string.Empty;

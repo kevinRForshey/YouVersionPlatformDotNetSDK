@@ -2,7 +2,7 @@ using System.Net;
 using Platform.API.Clients;
 using Platform.API.Exceptions;
 using Platform.API.Models;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.SDK.Services
 {
@@ -23,7 +23,7 @@ namespace Platform.SDK.Services
             {
                 return await client.GetHighlightsAsync(bibleId, passage, cancellationToken);
             }
-            catch (YouVersionApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            catch (BibleApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
             {
                 throw new HighlightAccessDeniedException(AccessDeniedMessage, ex);
             }
@@ -44,7 +44,7 @@ namespace Platform.SDK.Services
             {
                 return await client.CreateOrUpdateHighlightAsync(bibleId, passage, color, cancellationToken);
             }
-            catch (YouVersionApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            catch (BibleApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
             {
                 throw new HighlightAccessDeniedException(AccessDeniedMessage, ex);
             }
@@ -57,7 +57,7 @@ namespace Platform.SDK.Services
             {
                 await client.ClearHighlightsAsync(bibleId, passage, cancellationToken);
             }
-            catch (YouVersionApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            catch (BibleApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
             {
                 throw new HighlightAccessDeniedException(AccessDeniedMessage, ex);
             }

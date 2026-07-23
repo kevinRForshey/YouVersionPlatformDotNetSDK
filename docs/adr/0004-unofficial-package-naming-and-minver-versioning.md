@@ -2,7 +2,17 @@
 
 ## Status
 
-Accepted
+Accepted, package naming since superseded — see "Update" below.
+
+## Update
+
+The `.Unofficial`-suffixed, `YouVersion.*`-rooted naming described in this ADR was later dropped
+entirely: `PackageId`s no longer reference the `YouVersion` mark at all (e.g.
+`YouVersion.Platform.API.Unofficial` → `BiblePlatform.API`, `YouVersion.UsfmReferences.Unofficial`
+→ `BiblePlatform.UsfmReferences`), so there's nothing left to disclaim in the identifier itself.
+The MinVer-derived versioning decision below is unaffected by that rename. This ADR is kept as the
+historical record of the `.Unofficial` naming's reasoning, not as a description of the current
+`PackageId`s.
 
 ## Context
 

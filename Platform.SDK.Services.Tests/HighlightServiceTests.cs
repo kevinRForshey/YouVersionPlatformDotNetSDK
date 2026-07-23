@@ -5,7 +5,7 @@ using Platform.API.Clients;
 using Platform.API.Exceptions;
 using Platform.API.Models;
 using Xunit;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.SDK.Services.Tests;
 
@@ -74,7 +74,7 @@ public sealed class HighlightServiceTests
     {
         var client = new Mock<IHighlightClient>();
         client.Setup(c => c.GetHighlightsAsync(3034, Chapter3, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new YouVersionApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
+            .ThrowsAsync(new BibleApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
 
         var sut = new HighlightService(client.Object);
 
@@ -157,7 +157,7 @@ public sealed class HighlightServiceTests
     {
         var client = new Mock<IHighlightClient>();
         client.Setup(c => c.CreateOrUpdateHighlightAsync(3034, John316, "44aa44", It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new YouVersionApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
+            .ThrowsAsync(new BibleApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
 
         var sut = new HighlightService(client.Object);
 
@@ -216,7 +216,7 @@ public sealed class HighlightServiceTests
     {
         var client = new Mock<IHighlightClient>();
         client.Setup(c => c.ClearHighlightsAsync(3034, John316, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new YouVersionApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
+            .ThrowsAsync(new BibleApiException(HttpStatusCode.Unauthorized, "unauthorized", null));
 
         var sut = new HighlightService(client.Object);
 

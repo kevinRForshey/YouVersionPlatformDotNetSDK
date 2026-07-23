@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace Platform.API.OAuth;
 
 /// <summary>
-/// Represents the token response returned by the YouVersion OAuth 2.0 token endpoint.
+/// Represents the token response returned by the platform's OAuth 2.0 token endpoint.
 /// </summary>
 public sealed record OAuthTokenResponse
 {

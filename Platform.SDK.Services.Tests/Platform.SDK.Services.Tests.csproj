@@ -27,7 +27,7 @@
     <ProjectReference Include="..\Platform.API.Models\Platform.API.Models.csproj" />
     <ProjectReference Include="..\Platform.API\Platform.API.csproj" />
     <ProjectReference Include="..\Platform.SDK.Services\Platform.SDK.Services.csproj" />
-    <ProjectReference Include="..\YouVersion.UsfmReferences\YouVersion.UsfmReferences.csproj" />
+    <ProjectReference Include="..\BiblePlatform.UsfmReferences\BiblePlatform.UsfmReferences.csproj" />
   </ItemGroup>
 
 </Project>

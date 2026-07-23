@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-UI code (`VerseComponent`, `YouVersionAuth`) only ever needs to answer two questions: is the current
+UI code (`VerseComponent`, `BibleAuth`) only ever needs to answer two questions: is the current
 user signed in, and what's their display name? The actual answer lives behind `ITokenProvider`, which
 returns an `OAuthTokenResponse` — a type from `Platform.API.OAuth` that carries raw token material
 (access/refresh tokens, expiry) and is exactly the kind of type [ADR 0001](0001-layered-architecture-with-enforced-boundaries.md)
@@ -24,7 +24,7 @@ UI-facing `AuthSession` shape. Components call `IAuthSessionService`, never `ITo
 
 ## Consequences
 
-- `VerseComponent` and `YouVersionAuth` depend on a two-property record instead of raw OAuth token
+- `VerseComponent` and `BibleAuth` depend on a two-property record instead of raw OAuth token
   internals, keeping them within the boundary `ApiClientBoundaryTests` enforces.
 - Expiry semantics (what "signed in" means) live in exactly one place
   (`AuthSessionService.GetCurrentSessionAsync`), so a future change to how expiry or display-identity

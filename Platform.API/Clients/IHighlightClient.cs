@@ -9,8 +9,8 @@ namespace Platform.API.Clients;
 /// Consumers that need only one concern should depend on
 /// <see cref="IHighlightReader"/> or <see cref="IHighlightWriter"/> directly.
 /// Highlight write operations require user authentication (OAuth).
-/// Call <see cref="Platform.API.Extensions.ServiceCollectionExtensions.AddYouVersionOAuth"/> after
-/// <c>AddYouVersionApiClients</c> to enable automatic bearer-token injection.
+/// Call <see cref="Platform.API.Extensions.ServiceCollectionExtensions.AddBibleOAuth"/> after
+/// <c>AddBibleApiClients</c> to enable automatic bearer-token injection.
 /// </remarks>
 public interface IHighlightClient : IHighlightReader, IHighlightWriter
 {

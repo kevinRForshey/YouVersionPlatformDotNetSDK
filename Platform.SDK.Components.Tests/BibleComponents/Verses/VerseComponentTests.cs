@@ -7,7 +7,7 @@ using Platform.API.Models;
 using Platform.SDK.Components.BibleComponents.Verses;
 using Platform.SDK.Services;
 using Xunit;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.SDK.Components.Tests.BibleComponents.Verses;
 

@@ -1,8 +1,8 @@
-# YouVersion.Platform.API.Models.Unofficial
+# BiblePlatform.API.Models
 
-Part of the [YouVersion Platform SDK for .NET](../README.md).
+Part of the [Bible Platform SDK for .NET](../README.md).
 
-Domain model types for the [YouVersion Platform REST API](https://developers.youversion.com).
+Domain model types for the [Platform REST API](https://developers.youversion.com).
 
 This package is a zero-dependency, pure-POCO library - no external NuGet dependencies required.
 All types are immutable record types with System.Text.Json property-name attributes.
@@ -32,6 +32,13 @@ All types are immutable record types with System.Text.Json property-name attribu
 
 net10.0
 
+## Installation
+
+Not published as a package — usually referenced transitively via `Platform.API`. To reference it
+directly, clone this repo and add a `ProjectReference`: see
+[Referencing this repo locally](../README.md#referencing-this-repo-locally) in the solution
+README.
+
 ## Attribution
 
 Always display the version Copyright field alongside Passage.Reference when showing Bible text.
@@ -40,8 +47,8 @@ Always display the version Copyright field alongside Passage.Reference when show
 
 This package has no dependencies on other packages in this SDK. It's consumed by:
 
-- [`YouVersion.Platform.API.Unofficial`](../Platform.API/README.md) — typed HTTP clients that return these model types.
-- [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md) — business-logic services built on top of `Platform.API`.
-- [`YouVersion.Platform.SDK.Components.Unofficial`](../Platform.SDK.Components/README.md) — Blazor components that render these types.
+- [`BiblePlatform.API`](../Platform.API/README.md) — typed HTTP clients that return these model types.
+- [`BiblePlatform.SDK.Services`](../Platform.SDK.Services/README.md) — business-logic services built on top of `Platform.API`.
+- [`BiblePlatform.SDK.Components`](../Platform.SDK.Components/README.md) — Blazor components that render these types.
 
 See the [solution README](../README.md) for the full package list and architecture overview.

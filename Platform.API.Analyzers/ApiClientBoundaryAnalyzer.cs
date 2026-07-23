@@ -33,7 +33,7 @@ public sealed class ApiClientBoundaryAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description:
-            "Platform.SDK.Components and PlatformTestApp must call YouVersion only through " +
+            "Platform.SDK.Components and PlatformTestApp must call the Platform API only through " +
             "Platform.SDK.Services; reaching past it into Platform.API.Clients/OAuth/Exceptions couples UI " +
             "code to HTTP/OAuth implementation details that are free to change independently. Assemblies " +
             "carrying [assembly: Platform.API.Models.AllowsPlatformApiClientAccess] (Platform.API and " +

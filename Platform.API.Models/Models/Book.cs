@@ -9,9 +9,9 @@ public sealed record Book
 {
     /// <summary>Gets the USFM book code (e.g. <c>GEN</c>, <c>MAT</c>, <c>REV</c>).</summary>
     /// <remarks>
-    /// This is a normalized, validated USFM book code from the YouVersion Platform API.
+    /// This is a normalized, validated USFM book code from the Platform API.
     /// All USFM references passed to passage and highlight operations are validated against
-    /// YouVersion.UsfmReferences.BookCatalog before being sent to the API.
+    /// BiblePlatform.UsfmReferences.BookCatalog before being sent to the API.
     /// </remarks>
     [JsonPropertyName("usfm")]
     public string Usfm { get; init; } = string.Empty;

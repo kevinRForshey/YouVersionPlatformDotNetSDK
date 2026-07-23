@@ -14,13 +14,13 @@ internal static class BibleIndexMapper
 {
     internal static IndexBook FindBook(BibleIndex index, int versionId, string bookUsfm)
         => index.Books.FirstOrDefault(b => string.Equals(b.Usfm, bookUsfm, StringComparison.OrdinalIgnoreCase))
-            ?? throw new YouVersionApiException(
+            ?? throw new BibleApiException(
                 HttpStatusCode.NotFound,
                 $"Book '{bookUsfm}' was not found in Bible version {versionId}.");
 
     internal static IndexChapter FindChapter(IndexBook book, int versionId, string bookUsfm, int chapterNumber)
         => book.Chapters.FirstOrDefault(c => c.Number == chapterNumber)
-            ?? throw new YouVersionApiException(
+            ?? throw new BibleApiException(
                 HttpStatusCode.NotFound,
                 $"Chapter {chapterNumber} was not found in book '{bookUsfm}' of Bible version {versionId}.");
 

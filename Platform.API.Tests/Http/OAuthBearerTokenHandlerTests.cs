@@ -62,7 +62,7 @@ public sealed class OAuthBearerTokenHandlerTests
         };
         var refreshedToken = FreshToken("refreshed-access");
 
-        var oAuthMock = new Mock<IYouVersionOAuthClient>();
+        var oAuthMock = new Mock<IBibleOAuthClient>();
         oAuthMock.Setup(c => c.RefreshTokenAsync(It.IsAny<CancellationToken>()))
                  .ReturnsAsync(refreshedToken);
 
@@ -87,7 +87,7 @@ public sealed class OAuthBearerTokenHandlerTests
             ExpiresIn = 10, ReceivedAt = DateTimeOffset.UtcNow.AddSeconds(-100)
         };
 
-        var oAuthMock = new Mock<IYouVersionOAuthClient>();
+        var oAuthMock = new Mock<IBibleOAuthClient>();
         oAuthMock.Setup(c => c.RefreshTokenAsync(It.IsAny<CancellationToken>()))
                  .ThrowsAsync(new InvalidOperationException("No refresh token available."));
 
@@ -107,7 +107,7 @@ public sealed class OAuthBearerTokenHandlerTests
     public async Task SendAsync_DoesNotRefresh_WhenTokenIsFresh()
     {
         var freshToken = FreshToken("fresh-access");
-        var oAuthMock = new Mock<IYouVersionOAuthClient>();
+        var oAuthMock = new Mock<IBibleOAuthClient>();
 
         var (_, httpClient) = BuildPipeline(freshToken, oAuthMock.Object);
 
@@ -132,7 +132,7 @@ public sealed class OAuthBearerTokenHandlerTests
 
         var refreshTcs = new TaskCompletionSource<OAuthTokenResponse>();
         var refreshCallCount = 0;
-        var oAuthMock = new Mock<IYouVersionOAuthClient>();
+        var oAuthMock = new Mock<IBibleOAuthClient>();
         oAuthMock.Setup(c => c.RefreshTokenAsync(It.IsAny<CancellationToken>()))
                  .Returns(() =>
                  {
@@ -163,11 +163,11 @@ public sealed class OAuthBearerTokenHandlerTests
 
     private static (CapturingHandler inner, HttpClient httpClient) BuildPipeline(
         OAuthTokenResponse? storedToken,
-        IYouVersionOAuthClient? oAuthClient = null)
+        IBibleOAuthClient? oAuthClient = null)
     {
         var tokenProvider = new FakeTokenProvider(storedToken);
-        var oAuth = oAuthClient ?? Mock.Of<IYouVersionOAuthClient>();
-        var apiOptions = Options.Create(new YouVersionOAuthOptions
+        var oAuth = oAuthClient ?? Mock.Of<IBibleOAuthClient>();
+        var apiOptions = Options.Create(new BibleOAuthOptions
         {
             ClientId = "test-client",
             OAuthTokenExpiryBufferSeconds = 60

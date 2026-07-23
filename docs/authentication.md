@@ -18,16 +18,16 @@ A per-application credential you obtain by registering at
 ([`Platform.API/Http/AppKeyDelegatingHandler.cs`](../Platform.API/Http/AppKeyDelegatingHandler.cs)) —
 you never construct or attach that header yourself.
 
-If `YouVersionApiOptions.AppKey` is unset when a call is made, the handler throws an
+If `BibleApiOptions.AppKey` is unset when a call is made, the handler throws an
 `InvalidOperationException` naming the missing option rather than sending an unauthenticated
 request.
 
 ## Configuring it
 
 ```csharp
-builder.Services.AddYouVersionApiClients(options =>
+builder.Services.AddBibleApiClients(options =>
 {
-    options.AppKey = builder.Configuration["YouVersionApi:AppKey"]!;
+    options.AppKey = builder.Configuration["BibleApi:AppKey"]!;
 });
 ```
 
@@ -41,15 +41,15 @@ directly in a file that ships with your app or gets committed to source control:
 
   ```bash
   dotnet user-secrets init
-  dotnet user-secrets set "YouVersionApi:AppKey" "YOUR_APP_KEY"
-  dotnet user-secrets set "YouVersionOAuth:ClientId" "YOUR_CLIENT_ID"
+  dotnet user-secrets set "BibleApi:AppKey" "YOUR_APP_KEY"
+  dotnet user-secrets set "BibleOAuth:ClientId" "YOUR_CLIENT_ID"
   ```
 
   User Secrets are stored outside the project directory (keyed to a per-project id in the
   `.csproj`), so they can't be accidentally committed even without a `.gitignore` entry.
 
 - **Production** — supply values via environment variables (ASP.NET Core maps `__` to `:`, so
-  `YouVersionApi:AppKey` becomes `YouVersionApi__AppKey`) or a secret manager — Azure Key Vault, AWS
+  `BibleApi:AppKey` becomes `BibleApi__AppKey`) or a secret manager — Azure Key Vault, AWS
   Secrets Manager, etc. — registered as an additional `IConfiguration` source. Never check a live
   key into any `appsettings*.json` file.
 
@@ -59,10 +59,10 @@ sources, no code in this SDK needs to change between environments — only where
 
 ## Troubleshooting
 
-- `InvalidOperationException` mentioning `YouVersionApiOptions.AppKey`: the app key wasn't set
-  before the first API call — check the configuration section name (`YouVersionApi`) and binding
-  path match what you passed to `AddYouVersionApiClients`.
-- `YouVersionApiException` with `401`/`403`: the app key is set but invalid, revoked, or not
+- `InvalidOperationException` mentioning `BibleApiOptions.AppKey`: the app key wasn't set
+  before the first API call — check the configuration section name (`BibleApi`) and binding
+  path match what you passed to `AddBibleApiClients`.
+- `BibleApiException` with `401`/`403`: the app key is set but invalid, revoked, or not
   authorized for the endpoint being called.
 
 ## Next steps

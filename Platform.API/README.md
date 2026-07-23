@@ -1,11 +1,11 @@
-# YouVersion.Platform.API.Unofficial
+# BiblePlatform.API
 
-Part of the [YouVersion Platform SDK for .NET](../README.md).
+Part of the [Bible Platform SDK for .NET](../README.md).
 
-Typed HTTP client SDK for the [YouVersion Platform REST API](https://developers.youversion.com).
+Typed HTTP client SDK for the [Platform REST API](https://developers.youversion.com).
 
-Depends on [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md) for its
-request/response types, and on [`YouVersion.UsfmReferences.Unofficial`](../YouVersion.UsfmReferences/README.md)
+Depends on [`BiblePlatform.API.Models`](../Platform.API.Models/README.md) for its
+request/response types, and on [`BiblePlatform.UsfmReferences`](../BiblePlatform.UsfmReferences/README.md)
 for parsing scripture references such as `Reference` and `VerseRange`.
 
 ## What this package provides
@@ -13,10 +13,10 @@ for parsing scripture references such as `Reference` and `VerseRange`.
 - `IBibleClient` for Bible discovery, version metadata, and book/chapter/verse structure.
 - `IPassageClient` for passage text/HTML retrieval.
 - `IHighlightClient` for highlight read/write operations (get per-passage, recent colors, create-or-update, clear).
-- `IYouVersionOAuthClient` for authorization-code + PKCE OAuth flow.
+- `IBibleOAuthClient` for authorization-code + PKCE OAuth flow.
 - `ITokenProvider` (default: `InMemoryTokenProvider`) for token persistence.
 - Built-in `HttpClient` resilience and outbound rate limiting.
-- DI extensions: `AddYouVersionApiClients(...)` and `AddYouVersionOAuth(...)`.
+- DI extensions: `AddBibleApiClients(...)` and `AddBibleOAuth(...)`.
 
 ## Target framework
 
@@ -24,12 +24,12 @@ for parsing scripture references such as `Reference` and `VerseRange`.
 
 ## Installation
 
-Add package references as needed:
+> **Not published as a package.** Clone this repo and reference the project directly — see
+> [Referencing this repo locally](../README.md#referencing-this-repo-locally) in the solution
+> README.
 
-```xml
-<ItemGroup>
-  <PackageReference Include="YouVersion.Platform.API.Unofficial" Version="0.1.2" />
-</ItemGroup>
+```bash
+dotnet add reference ../BiblePlatformDotNetSDK/Platform.API/Platform.API.csproj
 ```
 
 ## Minimal setup (no sign-in required)
@@ -37,9 +37,9 @@ Add package references as needed:
 For read-only operations (versions, books, passages), only an app key is required.
 
 ```csharp
-builder.Services.AddYouVersionApiClients(options =>
+builder.Services.AddBibleApiClients(options =>
 {
-    options.AppKey = builder.Configuration["YouVersionApi:AppKey"]!;
+    options.AppKey = builder.Configuration["BibleApi:AppKey"]!;
 });
 ```
 
@@ -47,7 +47,7 @@ Example `appsettings.json`:
 
 ```json
 {
-  "YouVersionApi": {
+  "BibleApi": {
     "AppKey": "YOUR_APP_KEY",
     "BaseAddress": "https://api.youversion.com",
     "Timeout": "00:00:30",
@@ -70,15 +70,15 @@ gets committed to source control:
 
   ```bash
   dotnet user-secrets init
-  dotnet user-secrets set "YouVersionApi:AppKey" "YOUR_APP_KEY"
-  dotnet user-secrets set "YouVersionOAuth:ClientId" "YOUR_CLIENT_ID"
+  dotnet user-secrets set "BibleApi:AppKey" "YOUR_APP_KEY"
+  dotnet user-secrets set "BibleOAuth:ClientId" "YOUR_CLIENT_ID"
   ```
 
   User Secrets are stored outside the project directory (keyed to a per-project id in
   `.csproj`), so they can't be accidentally committed even without a `.gitignore` entry.
 
 - **Production**: supply values via environment variables (ASP.NET Core maps `__` to `:`, so
-  `YouVersionApi:AppKey` becomes `YouVersionApi__AppKey`) or a secret manager — Azure Key Vault,
+  `BibleApi:AppKey` becomes `BibleApi__AppKey`) or a secret manager — Azure Key Vault,
   AWS Secrets Manager, etc. — registered as an additional `IConfiguration` source. Never check a
   live key into any `appsettings*.json` file.
 
@@ -88,22 +88,22 @@ is told to look.
 
 ## OAuth setup (optional)
 
-Use this only when you need user-scoped operations (for example, highlight writes). YouVersion's
+Use this only when you need user-scoped operations (for example, highlight writes). The platform's
 sign-in API only supports the `openid`, `profile`, and `email` scopes — there is no separate scope
 for passages or highlights; any authenticated user can call those endpoints.
 
 ```csharp
 builder.Services
-    .AddYouVersionApiClients(builder.Configuration)
-    .AddYouVersionOAuth(options =>
+    .AddBibleApiClients(builder.Configuration)
+    .AddBibleOAuth(options =>
     {
-        options.ClientId = builder.Configuration["YouVersionOAuth:ClientId"]!;
-        options.RedirectUri = new Uri(builder.Configuration["YouVersionOAuth:RedirectUri"]!);
+        options.ClientId = builder.Configuration["BibleOAuth:ClientId"]!;
+        options.RedirectUri = new Uri(builder.Configuration["BibleOAuth:RedirectUri"]!);
         options.Scopes = "openid profile email";
     });
 ```
 
-> `AddYouVersionApiClients(...)` must be called before `AddYouVersionOAuth(...)`.
+> `AddBibleApiClients(...)` must be called before `AddBibleOAuth(...)`.
 
 ## Data Exchange (resource permissions)
 
@@ -115,7 +115,7 @@ depending on when you need consent:
 
 ### Requesting permissions during sign-in (recommended)
 
-Pass `requestedPermissions` to `BuildAuthorizationUrl`. YouVersion shows the consent UI as part
+Pass `requestedPermissions` to `BuildAuthorizationUrl`. The platform shows the consent UI as part
 of the same sign-in redirect — no extra round trip. In practice the grant result has been observed
 arriving via **either** of two shapes, and your callback handler should be prepared for both:
 
@@ -151,8 +151,8 @@ a full sign-in round trip again. The flow has three parts:
 2. **Redirect the user to the approval page** — `BuildDataExchangeApprovalUrl` builds the
    `GET /data-exchange` URL. Because this is a top-level browser redirect, it can't carry the
    `X-YVP-App-Key` header, so the app key is included as an `x-yvp-app-key` query parameter
-   instead (sourced from `YouVersionApiOptions.AppKey`).
-3. **Handle the callback** — YouVersion redirects the browser back to your configured
+   instead (sourced from `BibleApiOptions.AppKey`).
+3. **Handle the callback** — the platform redirects the browser back to your configured
    `RedirectUri` with the outcome in the query string. Call `ParseDataExchangeCallback` to turn
    that into a typed `DataExchangeCallbackResult` (`Status`, `GrantedPermissions`,
    `DeniedPermissions`, `Error`, `ErrorDescription`) instead of hand-parsing query parameters.
@@ -269,7 +269,7 @@ The SDK configures `HttpClient` with:
 - standard resilience handler (retry/backoff/timeout strategy), and
 - local outbound token-bucket rate limiting per typed client.
 
-Rate limit knobs (`YouVersionApi` options):
+Rate limit knobs (`BibleApi` options):
 
 - `OutboundRequestsPerSecond`: refill rate.
 - `OutboundBurstSize`: maximum immediate burst.
@@ -288,7 +288,7 @@ If you see local throttling, increase burst and/or queue gradually. If upstream 
 Default OAuth token storage (`InMemoryTokenProvider`) is a **process-wide singleton** — fine for
 single-user tools and local testing, but in a multi-user host (e.g. Blazor Server) it leaks one
 user's token to every other user on the same process. For any app with more than one concurrent
-user, register a custom, per-user-scoped `ITokenProvider` before `AddYouVersionOAuth(...)`:
+user, register a custom, per-user-scoped `ITokenProvider` before `AddBibleOAuth(...)`:
 
 ```csharp
 builder.Services.AddScoped<ITokenProvider, MyPerUserTokenProvider>();
@@ -301,27 +301,27 @@ Blazor Server prerender into the live interactive circuit.
 
 ## Exceptions
 
-- `YouVersionApiException` — the API returned a non-success HTTP response. Carries `StatusCode` and the raw `ResponseBody`.
-- `YouVersionEmptyResponseException` (derives from `YouVersionApiException`) — the HTTP call itself succeeded (`200 OK`), but the body was null, empty, or failed to deserialize into the expected type. Check for this type first (or catch it separately) rather than branching on `StatusCode`, since it doesn't carry a real wire-level error status.
+- `BibleApiException` — the API returned a non-success HTTP response. Carries `StatusCode` and the raw `ResponseBody`.
+- `BibleEmptyResponseException` (derives from `BibleApiException`) — the HTTP call itself succeeded (`200 OK`), but the body was null, empty, or failed to deserialize into the expected type. Check for this type first (or catch it separately) rather than branching on `StatusCode`, since it doesn't carry a real wire-level error status.
 
 ## Troubleshooting
 
-- `InvalidOperationException` mentioning `AddYouVersionApiClients`: call order is wrong; register API clients first.
-- `YouVersionApiException` with `401`/`403`: check app key and (for write ops) OAuth token state.
-- `YouVersionEmptyResponseException`: the request succeeded but returned no usable body — usually a transient upstream issue; safe to retry.
+- `InvalidOperationException` mentioning `AddBibleApiClients`: call order is wrong; register API clients first.
+- `BibleApiException` with `401`/`403`: check app key and (for write ops) OAuth token state.
+- `BibleEmptyResponseException`: the request succeeded but returned no usable body — usually a transient upstream issue; safe to retry.
 - Local outbound throttling errors: tune `OutboundRequestsPerSecond`, `OutboundBurstSize`, and `OutboundQueueLimit`.
 
 ## Additional docs
 
-- [Getting started](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/getting-started.md)
-- [Authentication (app key)](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/authentication.md)
-- [OAuth guide](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/blob/main/docs/oauth-guide.md)
+- [Getting started](https://github.com/kevinRForshey/BiblePlatformDotNetSDK/blob/main/docs/getting-started.md)
+- [Authentication (app key)](https://github.com/kevinRForshey/BiblePlatformDotNetSDK/blob/main/docs/authentication.md)
+- [OAuth guide](https://github.com/kevinRForshey/BiblePlatformDotNetSDK/blob/main/docs/oauth-guide.md)
 
 ## Related packages
 
-- [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md) — the model types this client returns.
-- [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md) — business-logic services built on top of this client; consider this layer instead of calling `Platform.API` directly when building your own UI.
-- [`YouVersion.Platform.SDK.Components.Unofficial`](../Platform.SDK.Components/README.md) — ready-made Blazor UI that consumes this client transitively.
+- [`BiblePlatform.API.Models`](../Platform.API.Models/README.md) — the model types this client returns.
+- [`BiblePlatform.SDK.Services`](../Platform.SDK.Services/README.md) — business-logic services built on top of this client; consider this layer instead of calling `Platform.API` directly when building your own UI.
+- [`BiblePlatform.SDK.Components`](../Platform.SDK.Components/README.md) — ready-made Blazor UI that consumes this client transitively.
 
 ## Build and pack
 

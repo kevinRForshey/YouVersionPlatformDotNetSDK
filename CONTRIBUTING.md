@@ -31,8 +31,8 @@ weight rather than leaving the reasoning only in a PR description.
 5. Run the full build and test suite locally before opening a PR:
 
    ```bash
-   dotnet build YouVersionPlatform.slnx
-   dotnet test YouVersionPlatform.slnx
+   dotnet build BiblePlatform.slnx
+   dotnet test BiblePlatform.slnx
    ```
 
    For non-trivial test changes, consider also running [mutation testing](docs/mutation-testing.md)

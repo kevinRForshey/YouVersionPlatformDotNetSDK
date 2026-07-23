@@ -17,8 +17,8 @@ namespace Platform.API.Http;
 internal sealed class OAuthBearerTokenHandler : DelegatingHandler
 {
     private readonly ITokenProvider _tokenProvider;
-    private readonly IYouVersionOAuthClient _oAuthClient;
-    private readonly YouVersionOAuthOptions _oAuthOptions;
+    private readonly IBibleOAuthClient _oAuthClient;
+    private readonly BibleOAuthOptions _oAuthOptions;
     private readonly ILogger<OAuthBearerTokenHandler> _logger;
 
     // HttpClientFactory caches and reuses a single handler-chain instance (including this
@@ -32,8 +32,8 @@ internal sealed class OAuthBearerTokenHandler : DelegatingHandler
 
     public OAuthBearerTokenHandler(
         ITokenProvider tokenProvider,
-        IYouVersionOAuthClient oAuthClient,
-        IOptions<YouVersionOAuthOptions> oAuthOptions,
+        IBibleOAuthClient oAuthClient,
+        IOptions<BibleOAuthOptions> oAuthOptions,
         ILogger<OAuthBearerTokenHandler> logger)
     {
         _tokenProvider = tokenProvider;

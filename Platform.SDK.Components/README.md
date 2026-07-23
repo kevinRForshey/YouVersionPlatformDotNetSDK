@@ -1,35 +1,43 @@
-# YouVersion.Platform.SDK.Components.Unofficial
+# BiblePlatform.SDK.Components
 
-Part of the [YouVersion Platform SDK for .NET](../README.md).
+Part of the [Bible Platform SDK for .NET](../README.md).
 
-Blazor UI components for the [YouVersion Platform SDK](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK).
+Blazor UI components for the [Bible Platform SDK](https://github.com/kevinRForshey/BiblePlatformDotNetSDK).
 
-Provides reusable Bible reader and related Blazor components (version/book/chapter/verse pickers, `BibleReader`, `YouVersionAuth`, `VerseComponent`) built on plain Bootstrap markup — no UI framework dependency beyond what your host app already brings in.
+Provides reusable Bible reader and related Blazor components (version/book/chapter/verse pickers, `BibleReader`, `BibleAuth`, `VerseComponent`) built on plain Bootstrap markup — no UI framework dependency beyond what your host app already brings in.
+
+> These are minimal integration demos of the Platform API's reading/highlighting endpoints —
+> building blocks for embedding scripture access in your own app, not a standalone Bible-reading
+> application. Not intended to replicate or compete with the YouVersion Bible App.
 
 ## Installation
 
+> **Not published as a package.** Clone this repo and reference the project directly — see
+> [Referencing this repo locally](../README.md#referencing-this-repo-locally) in the solution
+> README.
+
 ```bash
-dotnet add package YouVersion.Platform.SDK.Components.Unofficial
+dotnet add reference ../BiblePlatformDotNetSDK/Platform.SDK.Components/Platform.SDK.Components.csproj
 ```
 
-This package transitively installs [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md), [`YouVersion.Platform.API.Unofficial`](../Platform.API/README.md), and [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md).
+This project transitively references [`Platform.SDK.Services`](../Platform.SDK.Services/README.md), [`Platform.API`](../Platform.API/README.md), and [`Platform.API.Models`](../Platform.API.Models/README.md).
 
 Register the underlying services once at startup:
 
 ```csharp
-builder.Services.AddYouVersionApiClients(options => { /* ... */ });
-builder.Services.AddYouVersionOAuth(options => { /* ... */ }); // only if you need sign-in / highlighting
-builder.Services.AddYouVersionComponents();
+builder.Services.AddBibleApiClients(options => { /* ... */ });
+builder.Services.AddBibleOAuth(options => { /* ... */ }); // only if you need sign-in / highlighting
+builder.Services.AddBibleComponents();
 ```
 
-See [`Platform.API`'s README](../Platform.API/README.md#oauth-setup-optional) for `AddYouVersionOAuth` setup and
-[`Platform.SDK.Services`'s README](../Platform.SDK.Services/README.md) for the services `AddYouVersionComponents()` registers.
+See [`Platform.API`'s README](../Platform.API/README.md#oauth-setup-optional) for `AddBibleOAuth` setup and
+[`Platform.SDK.Services`'s README](../Platform.SDK.Services/README.md) for the services `AddBibleComponents()` registers.
 
-`AddYouVersionComponents()` registers `IVersionService`, `IBookService`, `IChapterService`,
+`AddBibleComponents()` registers `IVersionService`, `IBookService`, `IChapterService`,
 `IPassageService`, `IHighlightService`, and `IBibleReaderStateService` as **scoped** — one instance
 per Blazor circuit/user. Every component below resolves these via `@inject`; none of them accept
 data as component parameters, so nothing renders correctly outside a DI container that has run
-`AddYouVersionComponents()`.
+`AddBibleComponents()`.
 
 ## Quick start
 
@@ -55,7 +63,7 @@ below).
 *Services used:* `IBibleReaderStateService`, `IPassageService`
 
 The all-in-one reading experience: version/book/chapter/verse pickers, a **Read** button, sign-in
-via the embedded `YouVersionAuth`, and the loaded passage rendered through `VerseComponent` (with
+via the embedded `BibleAuth`, and the loaded passage rendered through `VerseComponent` (with
 click-to-highlight) by default. This is the component most consumers should start with.
 
 | Parameter | Type | Default | Description |
@@ -65,9 +73,9 @@ click-to-highlight) by default. This is the component most consumers should star
 | `Format` | `PassageFormat` | `PassageFormat.Html` | Passage format requested from the API. Use `PassageFormat.Text` for plain text. |
 | `PassageTemplate` | `RenderFragment<Passage>?` | `null` | Custom rendering for the loaded passage, receiving the `Passage` as render-fragment context. When omitted, the built-in `VerseComponent` is used. |
 | `EnableHighlighting` | `bool` | `true` | Whether the default (non-templated) passage display shows the highlighting toolbar. No effect when `PassageTemplate` is supplied. |
-| `LoginPath` | `string` | `"/auth/login"` | Sign-in route forwarded to the embedded `YouVersionAuth`. |
-| `LogoutPath` | `string` | `"/auth/logout"` | Sign-out route forwarded to the embedded `YouVersionAuth`. |
-| `OAuthError` | `string?` | `null` | OAuth error message forwarded to the embedded `YouVersionAuth` (e.g. from a `?oauth_error=` query parameter on the host page). |
+| `LoginPath` | `string` | `"/auth/login"` | Sign-in route forwarded to the embedded `BibleAuth`. |
+| `LogoutPath` | `string` | `"/auth/logout"` | Sign-out route forwarded to the embedded `BibleAuth`. |
+| `OAuthError` | `string?` | `null` | OAuth error message forwarded to the embedded `BibleAuth` (e.g. from a `?oauth_error=` query parameter on the host page). |
 
 | Event | Type | Fires when |
 |---|---|---|
@@ -192,7 +200,7 @@ you're fetching passages yourself (e.g. via `IPassageService`) but still want hi
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `Passage` | `Passage` | *(required)* | The passage to render. Marked `[EditorRequired]`. |
-| `Copyright` | `string?` | `null` | Copyright notice shown in the footer. Always display the version's `Copyright` alongside the passage per YouVersion's attribution requirement. |
+| `Copyright` | `string?` | `null` | Copyright notice shown in the footer. Always display the version's `Copyright` alongside the passage per the platform's attribution requirement. |
 | `VersionId` | `int` | `0` | The Bible version id the passage was read from. Required to create/look up highlights. When `0` (default), the highlighting toolbar is hidden and the passage renders read-only regardless of `EnableHighlighting`. |
 | `EnableHighlighting` | `bool` | `true` | Whether the highlighting toolbar and verse click/double-click interactions are enabled. When `false`, no sign-in check or highlight API calls are made at all. |
 
@@ -232,7 +240,7 @@ outside `VerseComponent` itself:
    `false`.
 2. **Has the user granted the separate `highlights` Data Exchange permission?** Signing in does
    *not* implicitly grant it — it's requested via a separate redirect
-   (`AddYouVersionOAuth`'s Data Exchange flow), and the result comes back on the query string (e.g.
+   (`AddBibleOAuth`'s Data Exchange flow), and the result comes back on the query string (e.g.
    `?highlights=granted` / `?highlights=denied`) after the approval round-trip. Persist that grant
    somewhere durable (a cookie, distributed cache, or your own user record) so highlighting stays on
    across page reloads instead of resetting to off every time the query parameter is absent.
@@ -285,7 +293,7 @@ parameter (this is exactly what `Home.razor` does).
 
 ---
 
-### `YouVersionAuth`
+### `BibleAuth`
 
 *Namespace:* `Platform.SDK.Components.Auth`
 *Services used:* `ITokenProvider`
@@ -308,7 +316,7 @@ inside `BibleReader`, but usable standalone anywhere you want auth controls (e.g
 | `OnSignOutRequested` | `EventCallback` | The user clicks "Sign out". If no delegate is provided, falls back to a full-page navigation to `LogoutPath`. |
 
 ```razor
-<YouVersionAuth LoginPath="/auth/login" LogoutPath="/auth/logout" />
+<BibleAuth LoginPath="/auth/login" LogoutPath="/auth/logout" />
 ```
 
 Sign-in state is re-checked after the component's first interactive render in addition to
@@ -317,10 +325,10 @@ prerender scope the component first ran in, so this avoids a stale "signed out" 
 
 ## Related packages
 
-- [`YouVersion.Platform.API.Models.Unofficial`](../Platform.API.Models/README.md) — the model types (`Passage`, `Highlight`, etc.) these components render.
-- [`YouVersion.Platform.API.Unofficial`](../Platform.API/README.md) — the raw HTTP client and OAuth setup underneath this package.
-- [`YouVersion.Platform.SDK.Services.Unofficial`](../Platform.SDK.Services/README.md) — the service layer these components inject and consume.
+- [`BiblePlatform.API.Models`](../Platform.API.Models/README.md) — the model types (`Passage`, `Highlight`, etc.) these components render.
+- [`BiblePlatform.API`](../Platform.API/README.md) — the raw HTTP client and OAuth setup underneath this package.
+- [`BiblePlatform.SDK.Services`](../Platform.SDK.Services/README.md) — the service layer these components inject and consume.
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](../LICENSE).

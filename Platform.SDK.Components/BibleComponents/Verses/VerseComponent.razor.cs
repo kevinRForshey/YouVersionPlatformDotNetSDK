@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Platform.API.Models;
 using Platform.SDK.Services;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.SDK.Components.BibleComponents.Verses;
 
@@ -26,7 +26,7 @@ public partial class VerseComponent : ComponentBase
         new("Purple", "ba68c8"),
     ];
 
-    // Matches the verse-start marker pair the YouVersion HTML passage format emits immediately
+    // Matches the verse-start marker pair the platform's HTML passage format emits immediately
     // before each verse's text: <span class="yv-v" v="16"></span><span class="yv-vlbl">16</span>.
     private static readonly Regex VerseMarkerRegex = new(
         """<span class="yv-v" v="(\d+)"[^>]*></span>(?:<span class="yv-vlbl"[^>]*>\d+</span>)?""",

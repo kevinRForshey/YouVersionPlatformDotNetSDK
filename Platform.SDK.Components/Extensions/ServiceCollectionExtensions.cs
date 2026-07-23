@@ -5,18 +5,18 @@ using Platform.SDK.Services;
 namespace Platform.SDK.Components.Extensions;
 
 /// <summary>
-/// Extension methods for registering YouVersion SDK Blazor components and their services.
+/// Extension methods for registering the SDK's Blazor components and their services.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the SDK services required by the YouVersion Blazor components:
+    /// Registers the SDK services required by the Blazor components:
     /// <see cref="IVersionService"/>, <see cref="IBookService"/>, <see cref="IChapterService"/>,
     /// <see cref="IPassageService"/>, <see cref="IHighlightService"/>,
     /// <see cref="IBibleReaderStateService"/>, and <see cref="IAuthSessionService"/>.
-    /// Call this after <c>AddYouVersionApiClients</c> and <c>AddYouVersionOAuth</c>.
+    /// Call this after <c>AddBibleApiClients</c> and <c>AddBibleOAuth</c>.
     /// </summary>
-    public static IServiceCollection AddYouVersionComponents(this IServiceCollection services)
+    public static IServiceCollection AddBibleComponents(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 

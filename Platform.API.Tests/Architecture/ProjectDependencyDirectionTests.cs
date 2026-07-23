@@ -65,7 +65,7 @@ public sealed class ProjectDependencyDirectionTests
         var references = ArchitectureTestHelpers.GetProjectReferences(csproj);
 
         references.Should().BeEquivalentTo(
-            new[] { "YouVersion.UsfmReferences", "Platform.API.Models", "Platform.API", "Platform.SDK.Services" },
+            new[] { "BiblePlatform.UsfmReferences", "Platform.API.Models", "Platform.API", "Platform.SDK.Services" },
             "an unpinned new reference here would silently widen Components' dependency surface " +
             "without a corresponding review of the layering rules.");
     }

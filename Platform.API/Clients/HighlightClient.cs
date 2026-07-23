@@ -7,7 +7,7 @@ using Platform.API.Http;
 using Platform.API.Models;
 
 using System.Net.Http.Json;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.API.Clients;
 
@@ -18,8 +18,8 @@ namespace Platform.API.Clients;
 /// Highlights are identified by (bible id, passage id) — the API has no opaque highlight id.
 /// </summary>
 /// <remarks>
-/// Call <see cref="Platform.API.Extensions.ServiceCollectionExtensions.AddYouVersionOAuth"/> after
-/// <c>AddYouVersionApiClients</c> to enable automatic bearer-token injection for write operations.
+/// Call <see cref="Platform.API.Extensions.ServiceCollectionExtensions.AddBibleOAuth"/> after
+/// <c>AddBibleApiClients</c> to enable automatic bearer-token injection for write operations.
 /// </remarks>
 internal sealed partial class HighlightClient(
     HttpClient httpClient,
@@ -102,7 +102,7 @@ internal sealed partial class HighlightClient(
             .ReadFromJsonAsync<Highlight>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        var result = highlight ?? throw new YouVersionEmptyResponseException(
+        var result = highlight ?? throw new BibleEmptyResponseException(
             $"Create-or-update highlight for '{passageId}' returned an empty response body.");
 
         logger.LogDebug("Saved highlight for {PassageId}.", passageId);
@@ -131,7 +131,7 @@ internal sealed partial class HighlightClient(
     /// </summary>
     /// <param name="reference">The USFM reference to normalize.</param>
     /// <returns>The normalized USFM string (e.g., "JHN.3.16").</returns>
-    /// <exception cref="YouVersionApiException">Thrown if the reference cannot be converted to USFM.</exception>
+    /// <exception cref="BibleApiException">Thrown if the reference cannot be converted to USFM.</exception>
     private static string ToNormalizedUsfm(Reference reference)
     {
         try
@@ -140,7 +140,7 @@ internal sealed partial class HighlightClient(
         }
         catch (Exception ex)
         {
-            throw new YouVersionApiException(
+            throw new BibleApiException(
                 System.Net.HttpStatusCode.BadRequest,
                 $"Failed to normalize USFM reference to string: {ex.Message}",
                 ex.ToString());

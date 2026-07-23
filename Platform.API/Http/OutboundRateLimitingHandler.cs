@@ -9,7 +9,7 @@ using Platform.API.Configuration;
 namespace Platform.API.Http;
 
 /// <summary>
-/// Applies a per-client token-bucket rate limiter to outbound YouVersion API requests.
+/// Applies a per-client token-bucket rate limiter to outbound Platform API requests.
 /// </summary>
 internal sealed class OutboundRateLimitingHandler : DelegatingHandler, IDisposable
 {
@@ -17,20 +17,20 @@ internal sealed class OutboundRateLimitingHandler : DelegatingHandler, IDisposab
     private readonly ILogger<OutboundRateLimitingHandler> _logger;
 
     public OutboundRateLimitingHandler(
-        IOptions<YouVersionApiOptions> options,
+        IOptions<BibleApiOptions> options,
         ILogger<OutboundRateLimitingHandler> logger)
     {
         _logger = logger;
         var value = options.Value;
 
         if (value.OutboundRequestsPerSecond <= 0)
-            throw new InvalidOperationException($"{nameof(YouVersionApiOptions)}.{nameof(YouVersionApiOptions.OutboundRequestsPerSecond)} must be greater than zero.");
+            throw new InvalidOperationException($"{nameof(BibleApiOptions)}.{nameof(BibleApiOptions.OutboundRequestsPerSecond)} must be greater than zero.");
 
         if (value.OutboundBurstSize < value.OutboundRequestsPerSecond)
-            throw new InvalidOperationException($"{nameof(YouVersionApiOptions)}.{nameof(YouVersionApiOptions.OutboundBurstSize)} must be greater than or equal to {nameof(YouVersionApiOptions.OutboundRequestsPerSecond)}.");
+            throw new InvalidOperationException($"{nameof(BibleApiOptions)}.{nameof(BibleApiOptions.OutboundBurstSize)} must be greater than or equal to {nameof(BibleApiOptions.OutboundRequestsPerSecond)}.");
 
         if (value.OutboundQueueLimit < 0)
-            throw new InvalidOperationException($"{nameof(YouVersionApiOptions)}.{nameof(YouVersionApiOptions.OutboundQueueLimit)} cannot be negative.");
+            throw new InvalidOperationException($"{nameof(BibleApiOptions)}.{nameof(BibleApiOptions.OutboundQueueLimit)} cannot be negative.");
 
         _rateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
         {

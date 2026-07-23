@@ -18,7 +18,7 @@ public sealed class OutboundRateLimitingHandlerTests
     [Fact]
     public async Task SendAsync_AllowsRequest_WhenPermitAvailable()
     {
-        var (inner, httpClient) = BuildPipeline(new YouVersionApiOptions
+        var (inner, httpClient) = BuildPipeline(new BibleApiOptions
         {
             AppKey = "key",
             OutboundRequestsPerSecond = 10,
@@ -35,7 +35,7 @@ public sealed class OutboundRateLimitingHandlerTests
     [Fact]
     public async Task SendAsync_ThrowsHttpRequestException_WhenRateLimitIsExceededAndNoQueue()
     {
-        var (_, httpClient) = BuildPipeline(new YouVersionApiOptions
+        var (_, httpClient) = BuildPipeline(new BibleApiOptions
         {
             AppKey = "key",
             OutboundRequestsPerSecond = 1,
@@ -53,7 +53,7 @@ public sealed class OutboundRateLimitingHandlerTests
     [Fact]
     public void Ctor_ThrowsInvalidOperationException_WhenBurstIsLessThanRequestsPerSecond()
     {
-        var options = Options.Create(new YouVersionApiOptions
+        var options = Options.Create(new BibleApiOptions
         {
             AppKey = "key",
             OutboundRequestsPerSecond = 10,
@@ -67,7 +67,7 @@ public sealed class OutboundRateLimitingHandlerTests
             .WithMessage("*OutboundBurstSize*");
     }
 
-    private static (CapturingHandler inner, HttpClient httpClient) BuildPipeline(YouVersionApiOptions options)
+    private static (CapturingHandler inner, HttpClient httpClient) BuildPipeline(BibleApiOptions options)
     {
         var inner = new CapturingHandler();
         var limiter = new OutboundRateLimitingHandler(

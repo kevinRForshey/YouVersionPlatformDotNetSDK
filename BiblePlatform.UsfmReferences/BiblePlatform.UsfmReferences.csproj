@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- ============================ NuGet package metadata ============================ -->
+  <PropertyGroup>
+    <!-- Versioned independently of the MinVer-driven Platform.* packages: this is a
+         standalone port tracking the upstream youversion/usfm-references release number. -->
+    <MinVerSkip>true</MinVerSkip>
+    <Version>3.1.1</Version>
+
+    <!-- This package's version tracks upstream, not the repo-wide MinVer/tag scheme, so it
+         needs its own package-validation baseline instead of Directory.Build.props's 0.1.x
+         one. Bump this to match Version whenever a new release is published. -->
+    <PackageValidationBaselineVersion>3.1.1</PackageValidationBaselineVersion>
+
+    <Title>Bible Platform USFM References</Title>
+    <Product>BiblePlatform.UsfmReferences</Product>
+    <Description>Parsing, validation, and conversion utilities for USFM (Unified Standard Format Markers) scripture references. An unofficial C# port of the youversion/usfm-references Python library; not affiliated with or endorsed by YouVersion.</Description>
+    <PackageTags>usfm;bible;scripture;reference;parsing;validation;canon</PackageTags>
+    <Copyright>Copyright © 2026 Kevin Forshey</Copyright>
+
+    <!-- License: Apache-2.0, consistent with the rest of this repo. The upstream Python project
+         is MIT-licensed; MIT permits relicensing a derived port under other terms. -->
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+
+    <PackageProjectUrl>https://github.com/kevinRForshey/BiblePlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/BiblePlatformDotNetSDK</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <PackageReleaseNotes>Initial .NET release. Feature-equivalent port of usfm-references 3.1.1.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <!-- ===================== Build reproducibility & source debugging ===================== -->
+  <PropertyGroup>
+    <!-- Ship a .snupkg symbol package so consumers can step into the source. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- SourceLink ships in the .NET 8+ SDK; no extra PackageReference needed. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+</Project>

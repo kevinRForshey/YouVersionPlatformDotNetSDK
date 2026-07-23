@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-This is a pre-1.0, single-maintainer SDK. Only the latest published version of each package is
-supported; fixes are not backported to older tags.
+This is a pre-1.0, single-maintainer reference implementation, not a published package. Only the
+latest commit is supported; fixes are not backported to older tags.
 
 ## Reporting a vulnerability
 
@@ -11,7 +11,7 @@ Please **do not** open a public GitHub issue for a security vulnerability, espec
 to OAuth/PKCE token handling, session storage, or credential exposure.
 
 Instead, report it privately via
-[GitHub Security Advisories](https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK/security/advisories/new)
+[GitHub Security Advisories](https://github.com/kevinRForshey/BiblePlatformDotNetSDK/security/advisories/new)
 for this repository. Include:
 
 - A description of the vulnerability and its potential impact.

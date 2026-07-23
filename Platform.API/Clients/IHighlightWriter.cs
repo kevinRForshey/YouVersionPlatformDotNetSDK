@@ -1,6 +1,6 @@
 #region usings
 using Platform.API.Models;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 #endregion
 namespace Platform.API.Clients;
 

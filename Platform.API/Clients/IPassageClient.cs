@@ -2,12 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Platform.API.Models;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 #endregion
 namespace Platform.API.Clients;
 
 /// <summary>
-/// Provides scripture content retrieval from the YouVersion Platform API.
+/// Provides scripture content retrieval from the Platform API.
 /// </summary>
 public interface IPassageClient
 {

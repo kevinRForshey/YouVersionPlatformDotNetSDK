@@ -4,7 +4,7 @@ using Platform.API.Clients;
 using Platform.API.Extensions;
 using Platform.API.OAuth;
 using Platform.API.Tests.Fakes;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 using Xunit;
 
 namespace Platform.API.Tests.Extensions;
@@ -12,32 +12,32 @@ namespace Platform.API.Tests.Extensions;
 public sealed class ServiceCollectionExtensionsTests
 {
     // -------------------------------------------------------------------------
-    // AddYouVersionApiClients — inline options
+    // AddBibleApiClients — inline options
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void AddYouVersionApiClients_RegistersIBibleClient()
+    public void AddBibleApiClients_RegistersIBibleClient()
     {
         var sp = BuildProvider(withOAuth: false);
         sp.GetRequiredService<IBibleClient>().Should().NotBeNull();
     }
 
     [Fact]
-    public void AddYouVersionApiClients_RegistersIPassageClient()
+    public void AddBibleApiClients_RegistersIPassageClient()
     {
         var sp = BuildProvider(withOAuth: false);
         sp.GetRequiredService<IPassageClient>().Should().NotBeNull();
     }
 
     [Fact]
-    public void AddYouVersionApiClients_RegistersIHighlightClient()
+    public void AddBibleApiClients_RegistersIHighlightClient()
     {
         var sp = BuildProvider(withOAuth: false);
         sp.GetRequiredService<IHighlightClient>().Should().NotBeNull();
     }
 
     [Fact]
-    public void AddYouVersionApiClients_RegistersIUsfmReferenceService_AsSingleton()
+    public void AddBibleApiClients_RegistersIUsfmReferenceService_AsSingleton()
     {
         var sp = BuildProvider(withOAuth: false);
 
@@ -50,7 +50,7 @@ public sealed class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddYouVersionApiClients_ResolvesDistinctInstances_PerScope()
+    public void AddBibleApiClients_ResolvesDistinctInstances_PerScope()
     {
         var sp = BuildProvider(withOAuth: false);
 
@@ -65,63 +65,63 @@ public sealed class ServiceCollectionExtensionsTests
     }
 
     // -------------------------------------------------------------------------
-    // AddYouVersionOAuth
+    // AddBibleOAuth
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void AddYouVersionOAuth_RegistersIYouVersionOAuthClient()
+    public void AddBibleOAuth_RegistersIBibleOAuthClient()
     {
         var sp = BuildProvider(withOAuth: true);
-        sp.GetRequiredService<IYouVersionOAuthClient>().Should().NotBeNull();
+        sp.GetRequiredService<IBibleOAuthClient>().Should().NotBeNull();
     }
 
     [Fact]
-    public void AddYouVersionOAuth_RegistersITokenProvider_AsInMemoryTokenProvider()
+    public void AddBibleOAuth_RegistersITokenProvider_AsInMemoryTokenProvider()
     {
         var sp = BuildProvider(withOAuth: true);
         sp.GetRequiredService<ITokenProvider>().Should().BeOfType<InMemoryTokenProvider>();
     }
 
     [Fact]
-    public void AddYouVersionOAuth_ReturnsServiceCollection_ForChaining()
+    public void AddBibleOAuth_ReturnsServiceCollection_ForChaining()
     {
         var services = new ServiceCollection();
         services.AddLogging();
 
-        var returned = services.AddYouVersionApiClients(o => o.AppKey = "key")
-                               .AddYouVersionOAuth(o => o.ClientId = "cid");
+        var returned = services.AddBibleApiClients(o => o.AppKey = "key")
+                               .AddBibleOAuth(o => o.ClientId = "cid");
 
         returned.Should().BeSameAs(services);
     }
 
     [Fact]
-    public void AddYouVersionOAuth_ThrowsInvalidOperationException_WhenApiClientsNotRegisteredFirst()
+    public void AddBibleOAuth_ThrowsInvalidOperationException_WhenApiClientsNotRegisteredFirst()
     {
         var services = new ServiceCollection();
         services.AddLogging();
 
-        var act = () => services.AddYouVersionOAuth(o => o.ClientId = "cid");
+        var act = () => services.AddBibleOAuth(o => o.ClientId = "cid");
 
         act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*AddYouVersionApiClients*");
+            .WithMessage("*AddBibleApiClients*");
     }
 
     [Fact]
-    public void AddYouVersionApiClients_ThrowsArgumentNullException_WhenServicesIsNull()
+    public void AddBibleApiClients_ThrowsArgumentNullException_WhenServicesIsNull()
     {
         IServiceCollection services = null!;
 
-        var act = () => services.AddYouVersionApiClients(o => o.AppKey = "key");
+        var act = () => services.AddBibleApiClients(o => o.AppKey = "key");
 
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public void AddYouVersionApiClients_ThrowsArgumentNullException_WhenConfigureIsNull()
+    public void AddBibleApiClients_ThrowsArgumentNullException_WhenConfigureIsNull()
     {
         var services = new ServiceCollection();
 
-        var act = () => services.AddYouVersionApiClients((Action<Configuration.YouVersionApiOptions>)null!);
+        var act = () => services.AddBibleApiClients((Action<Configuration.BibleApiOptions>)null!);
 
         act.Should().Throw<ArgumentNullException>();
     }
@@ -131,18 +131,18 @@ public sealed class ServiceCollectionExtensionsTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task AddYouVersionOAuth_AttachesBearerToken_ToLiveHighlightClientRequest()
+    public async Task AddBibleOAuth_AttachesBearerToken_ToLiveHighlightClientRequest()
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddYouVersionApiClients(o => o.AppKey = "test-key");
-        services.AddYouVersionOAuth(o =>
+        services.AddBibleApiClients(o => o.AppKey = "test-key");
+        services.AddBibleOAuth(o =>
         {
             o.ClientId = "test-client";
             o.RedirectUri = new Uri("https://localhost/callback");
         });
 
-        // Intercept the same named pipeline AddYouVersionOAuth appended the bearer handler to,
+        // Intercept the same named pipeline AddBibleOAuth appended the bearer handler to,
         // via the shared constant rather than re-deriving the client name independently.
         var capturingHandler = new CapturingHandler(
             responseBody: """{"data":[]}""");
@@ -172,15 +172,15 @@ public sealed class ServiceCollectionExtensionsTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void AddYouVersionOAuth_AllowsCustomTokenProvider_Override()
+    public void AddBibleOAuth_AllowsCustomTokenProvider_Override()
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddYouVersionApiClients(o => o.AppKey = "key");
+        services.AddBibleApiClients(o => o.AppKey = "key");
 
-        // Register custom provider BEFORE AddYouVersionOAuth
+        // Register custom provider BEFORE AddBibleOAuth
         services.AddSingleton<ITokenProvider, CustomTokenProvider>();
-        services.AddYouVersionOAuth(o => o.ClientId = "cid");
+        services.AddBibleOAuth(o => o.ClientId = "cid");
 
         // The first registered singleton wins
         var sp = services.BuildServiceProvider();
@@ -195,11 +195,11 @@ public sealed class ServiceCollectionExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddYouVersionApiClients(o => o.AppKey = "test-key");
+        services.AddBibleApiClients(o => o.AppKey = "test-key");
 
         if (withOAuth)
         {
-            services.AddYouVersionOAuth(o =>
+            services.AddBibleOAuth(o =>
             {
                 o.ClientId = "test-client";
                 o.RedirectUri = new Uri("https://localhost/callback");

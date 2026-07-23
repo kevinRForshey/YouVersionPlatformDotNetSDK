@@ -31,10 +31,10 @@
     (removed/changed public member, dropped TFM, etc). Only takes effect for projects that are
     actually packed (the five library projects), so this is harmless on test/app projects.
 
-    Temporarily disabled: the PackageId naming convention changed (Unofficial-YouVersion.X ->
-    YouVersion.X.Unofficial), so no baseline package exists under the new IDs yet and restore
-    fails trying to fetch one. Re-enable once the first release under the new IDs is published,
-    setting PackageValidationBaselineVersion to that release's version.
+    Temporarily disabled: the PackageId naming convention changed twice (Unofficial-YouVersion.X ->
+    YouVersion.X.Unofficial -> BiblePlatform.X), so no baseline package exists under the current
+    IDs yet and restore fails trying to fetch one. Re-enable once the first release under the
+    current IDs is published, setting PackageValidationBaselineVersion to that release's version.
   -->
   <PropertyGroup>
     <EnablePackageValidation>false</EnablePackageValidation>

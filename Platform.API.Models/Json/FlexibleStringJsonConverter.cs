@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace Platform.API.Models.Json;
 
 /// <summary>
-/// Reads a JSON string or number as a <see cref="string"/>. The YouVersion Platform API's
+/// Reads a JSON string or number as a <see cref="string"/>. The Platform API's
 /// <c>/index</c> endpoint sends chapter/verse <c>title</c> fields as bare numbers for regular
 /// content but as strings for special sections (e.g. an introduction titled <c>"Intro"</c>),
 /// so a single model shape must tolerate either wire representation.

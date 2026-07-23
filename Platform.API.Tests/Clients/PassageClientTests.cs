@@ -6,7 +6,7 @@ using Platform.API.Clients;
 using Platform.API.Exceptions;
 using Platform.API.Models;
 using Platform.API.Tests.Fakes;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 using Xunit;
 #endregion
 
@@ -119,11 +119,11 @@ public sealed class PassageClientTests
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.Unauthorized)]
     [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task GetPassageAsync_ThrowsYouVersionApiException_WhenApiReturnsError(HttpStatusCode status)
+    public async Task GetPassageAsync_ThrowsBibleApiException_WhenApiReturnsError(HttpStatusCode status)
     {
         var client = BuildClient(status, """{"error":"fail"}""");
         var act = () => client.GetPassageAsync(3034, TestReferences.John316);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == status);
     }
 

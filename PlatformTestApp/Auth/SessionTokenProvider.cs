@@ -15,12 +15,12 @@ namespace PlatformTestApp.Auth;
 /// during the HTTP request that stored it).
 /// </summary>
 /// <remarks>
-/// Must be registered <b>before</b> <c>AddYouVersionOAuth</c>, since the library only adds its
+/// Must be registered <b>before</b> <c>AddBibleOAuth</c>, since the library only adds its
 /// default via <c>TryAddSingleton</c>:
 /// <code>
 /// builder.Services.AddScoped&lt;CircuitSessionKeyAccessor&gt;();
 /// builder.Services.AddScoped&lt;ITokenProvider, SessionTokenProvider&gt;();
-/// builder.Services.AddYouVersionOAuth(o => { ... });
+/// builder.Services.AddBibleOAuth(o => { ... });
 /// </code>
 /// </remarks>
 public sealed class SessionTokenProvider : ITokenProvider

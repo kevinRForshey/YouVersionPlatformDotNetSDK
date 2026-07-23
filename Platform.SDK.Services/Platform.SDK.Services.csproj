@@ -5,17 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <!-- NuGet package identity -->
-    <PackageId>YouVersion.Platform.SDK.Services.Unofficial</PackageId>
-    <Authors>Kevin Forshey</Authors>
-    <Product>YouVersion Platform SDK Services</Product>
-    <Description>Business-logic services (VersionService, PassageService, BookService, HighlightService, BibleReaderStateService) for the YouVersion Platform SDK.</Description>
-    <PackageTags>youversion;bible;sdk;services</PackageTags>
-    <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
+    <!-- Package metadata (no PackageId: not published, clone-and-reference only) -->
+    <Product>Bible Platform SDK Services</Product>
+    <Description>Business-logic services (VersionService, PassageService, BookService, HighlightService, BibleReaderStateService) for the Platform SDK.</Description>
+    <PackageTags>bible;sdk;services</PackageTags>
+    <PackageProjectUrl>https://github.com/kevinRForshey/BiblePlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/BiblePlatformDotNetSDK</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 
     <!-- Build quality -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -29,17 +25,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="/" />
-    <None Include="..\icon.png" Pack="true" PackagePath="/" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Platform.API.Models\Platform.API.Models.csproj" />
     <ProjectReference Include="..\Platform.API\Platform.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\YouVersion.UsfmReferences\YouVersion.UsfmReferences.csproj" />
+    <ProjectReference Include="..\BiblePlatform.UsfmReferences\BiblePlatform.UsfmReferences.csproj" />
   </ItemGroup>
 
 </Project>

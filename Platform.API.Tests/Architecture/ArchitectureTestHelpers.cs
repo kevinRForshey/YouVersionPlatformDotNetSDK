@@ -9,7 +9,7 @@ internal static class ArchitectureTestHelpers
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            if (File.Exists(Path.Combine(current.FullName, "YouVersionPlatform.slnx")))
+            if (File.Exists(Path.Combine(current.FullName, "BiblePlatform.slnx")))
                 return current.FullName;
 
             current = current.Parent;

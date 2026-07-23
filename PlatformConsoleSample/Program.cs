@@ -5,20 +5,20 @@ using Microsoft.Extensions.Hosting;
 using Platform.API.Clients;
 using Platform.API.Extensions;
 
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddUserSecrets<Program>();
-builder.Services.AddYouVersionApiClients(builder.Configuration);
+builder.Services.AddBibleApiClients(builder.Configuration);
 
 using var host = builder.Build();
 
 var bibleClient = host.Services.GetRequiredService<IBibleClient>();
 var passageClient = host.Services.GetRequiredService<IPassageClient>();
 
-Console.WriteLine("YouVersion Platform SDK - Console Sample");
-Console.WriteLine("=========================================");
+Console.WriteLine("Bible Platform SDK - Console Sample");
+Console.WriteLine("====================================");
 
 var versions = await bibleClient.GetVersionsAsync();
 Console.WriteLine($"\nFound {versions.Data.Count} Bible version(s) on this page:");

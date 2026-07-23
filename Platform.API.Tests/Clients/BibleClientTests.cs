@@ -94,11 +94,11 @@ public sealed class BibleClientTests
     [InlineData(HttpStatusCode.Unauthorized)]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task GetVersionsAsync_ThrowsYouVersionApiException_WhenApiReturnsError(HttpStatusCode statusCode)
+    public async Task GetVersionsAsync_ThrowsBibleApiException_WhenApiReturnsError(HttpStatusCode statusCode)
     {
         var client = BuildClient(statusCode, """{"error":"fail"}""");
         var act = () => client.GetVersionsAsync("en");
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == statusCode);
     }
 
@@ -128,11 +128,11 @@ public sealed class BibleClientTests
     }
 
     [Fact]
-    public async Task GetVersionAsync_ThrowsYouVersionApiException_WhenNotFound()
+    public async Task GetVersionAsync_ThrowsBibleApiException_WhenNotFound()
     {
         var client = BuildClient(HttpStatusCode.NotFound, """{"error":"not found"}""");
         var act = () => client.GetVersionAsync(9999);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.NotFound);
     }
 
@@ -163,11 +163,11 @@ public sealed class BibleClientTests
     }
 
     [Fact]
-    public async Task GetIndexAsync_ThrowsYouVersionApiException_WhenNotFound()
+    public async Task GetIndexAsync_ThrowsBibleApiException_WhenNotFound()
     {
         var client = BuildClient(HttpStatusCode.NotFound, """{"error":"not found"}""");
         var act = () => client.GetIndexAsync(9999);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.NotFound);
     }
 
@@ -235,11 +235,11 @@ public sealed class BibleClientTests
     }
 
     [Fact]
-    public async Task GetChaptersAsync_ThrowsYouVersionApiException_WhenBookNotInIndex()
+    public async Task GetChaptersAsync_ThrowsBibleApiException_WhenBookNotInIndex()
     {
         var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
         var act = () => client.GetChaptersAsync(3034, "REV");
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.NotFound);
     }
 
@@ -280,20 +280,20 @@ public sealed class BibleClientTests
     }
 
     [Fact]
-    public async Task GetVersesAsync_ThrowsYouVersionApiException_WhenChapterNotInBook()
+    public async Task GetVersesAsync_ThrowsBibleApiException_WhenChapterNotInBook()
     {
         var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
         var act = () => client.GetVersesAsync(3034, "GEN", 99);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.NotFound);
     }
 
     [Fact]
-    public async Task GetVersesAsync_ThrowsYouVersionApiException_WhenBookNotInIndex()
+    public async Task GetVersesAsync_ThrowsBibleApiException_WhenBookNotInIndex()
     {
         var client = BuildClient(HttpStatusCode.OK, SampleIndexJson);
         var act = () => client.GetVersesAsync(3034, "REV", 1);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.NotFound);
     }
 

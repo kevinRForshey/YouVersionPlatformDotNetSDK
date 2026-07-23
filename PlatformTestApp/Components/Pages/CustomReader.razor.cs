@@ -66,7 +66,7 @@ namespace PlatformTestApp.Components.Pages
 
         // A plain <a href> here gets swallowed by Blazor's enhanced navigation, which fetches the
         // response and tries to diff it into the page instead of following the server redirect to
-        // YouVersion's off-site approval page. forceLoad: true bypasses that, same as YouVersionAuth's
+        // the platform's off-site approval page. forceLoad: true bypasses that, same as BibleAuth's
         // sign-in/out buttons.
         private void RequestHighlightsAsync() => Nav.NavigateTo("/auth/request-highlights", forceLoad: true);
 

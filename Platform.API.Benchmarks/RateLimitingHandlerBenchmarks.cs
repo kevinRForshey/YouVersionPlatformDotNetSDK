@@ -26,7 +26,7 @@ public class RateLimitingHandlerBenchmarks
     {
         _plainClient = new HttpClient(new NoopHandler());
 
-        var options = Options.Create(new YouVersionApiOptions
+        var options = Options.Create(new BibleApiOptions
         {
             AppKey = "benchmark",
             OutboundRequestsPerSecond = 1_000_000,

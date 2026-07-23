@@ -38,7 +38,7 @@ public class CachingBibleClientBenchmarks
         _provider = services.BuildServiceProvider();
 
         var cache = _provider.GetRequiredService<HybridCache>();
-        _cachingClient = new CachingBibleClient(_rawClient, cache, new YouVersionCacheOptions());
+        _cachingClient = new CachingBibleClient(_rawClient, cache, new BibleCacheOptions());
 
         // Warm the cache so the benchmarked CachedHit() call is always a hit, not a miss.
         await _cachingClient.GetIndexAsync(VersionId);

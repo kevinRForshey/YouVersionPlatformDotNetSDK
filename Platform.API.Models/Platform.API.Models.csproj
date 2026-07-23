@@ -5,17 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <!-- NuGet package identity -->
-    <PackageId>YouVersion.Platform.API.Models.Unofficial</PackageId>
-    <Authors>Kevin Forshey</Authors>
-    <Product>YouVersion Platform API Models</Product>
-    <Description>Domain model types (Versions, Books, Chapters, Verses, Passages, Highlights) for the YouVersion Platform REST API.</Description>
-    <PackageTags>youversion;bible;api;models;sdk</PackageTags>
-    <PackageProjectUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kevinRForshey/YouVersionPlatformDotNetSDK</RepositoryUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
+    <!-- Package metadata (no PackageId: not published, clone-and-reference only) -->
+    <Product>Bible Platform API Models</Product>
+    <Description>Domain model types (Versions, Books, Chapters, Verses, Passages, Highlights) for the Platform REST API.</Description>
+    <PackageTags>bible;api;models;sdk</PackageTags>
+    <PackageProjectUrl>https://github.com/kevinRForshey/BiblePlatformDotNetSDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kevinRForshey/BiblePlatformDotNetSDK</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 
     <!-- Build quality -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -28,9 +24,5 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="/" />
-    <None Include="..\icon.png" Pack="true" PackagePath="/" />
-  </ItemGroup>
 
 </Project>

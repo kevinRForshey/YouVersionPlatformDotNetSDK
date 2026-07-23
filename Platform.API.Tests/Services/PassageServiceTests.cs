@@ -4,7 +4,7 @@ using Moq;
 using Platform.API.Clients;
 using Platform.API.Models;
 using Platform.SDK.Services;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 using Xunit;
 #endregion
 

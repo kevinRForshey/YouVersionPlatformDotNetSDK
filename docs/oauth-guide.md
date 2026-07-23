@@ -2,7 +2,7 @@
 
 This document walks through exactly how `Platform.API`'s OAuth client signs a user in, step by
 step, with the actual code involved at each stage. It covers the authorization-code + PKCE flow,
-the two shapes YouVersion's callback can take, token storage, and automatic refresh.
+the two shapes the platform's callback can take, token storage, and automatic refresh.
 
 If you just want copy/paste setup, see [`Platform.API/README.md`](../Platform.API/README.md#oauth-setup-optional).
 This guide explains *why* each step exists and *what happens under the hood*.
@@ -23,7 +23,7 @@ your app, the app proves it holds the *same process* that started the sign-in:
 
 Every piece of this — generating the verifier/challenge, building the redirect, redeeming the
 code, storing and refreshing the resulting tokens — is handled by
-[`IYouVersionOAuthClient`](../Platform.API/OAuth/IYouVersionOAuthClient.cs), the interface this
+[`IBibleOAuthClient`](../Platform.API/OAuth/IBibleOAuthClient.cs), the interface this
 guide walks through.
 
 ## The moving pieces
@@ -45,7 +45,7 @@ guide walks through.
 sequenceDiagram
     participant User as Browser
     participant App as Your App
-    participant YV as YouVersion
+    participant YV as Platform
 
     App->>App: BuildAuthorizationUrl()<br/>generates code_verifier + code_challenge + state
     App->>App: Store code_verifier + state (session)
@@ -79,37 +79,37 @@ there are two shapes and how each is handled.
 
 ## Step 1 — Configure the SDK
 
-Register the API clients first, then OAuth (the order is enforced — `AddYouVersionOAuth` throws
-`InvalidOperationException` if `AddYouVersionApiClients` hasn't run yet):
+Register the API clients first, then OAuth (the order is enforced — `AddBibleOAuth` throws
+`InvalidOperationException` if `AddBibleApiClients` hasn't run yet):
 
 ```csharp
 builder.Services
-    .AddYouVersionApiClients(builder.Configuration)
-    .AddYouVersionOAuth(options =>
+    .AddBibleApiClients(builder.Configuration)
+    .AddBibleOAuth(options =>
     {
-        options.ClientId = builder.Configuration["YouVersionOAuth:ClientId"]!;
-        options.RedirectUri = new Uri(builder.Configuration["YouVersionOAuth:RedirectUri"]!);
+        options.ClientId = builder.Configuration["BibleOAuth:ClientId"]!;
+        options.RedirectUri = new Uri(builder.Configuration["BibleOAuth:RedirectUri"]!);
         options.Scopes = "openid profile email";
     });
 ```
 
-`YouVersionOAuthOptions` ([`Platform.API/OAuth/YouVersionOAuthOptions.cs`](../Platform.API/OAuth/YouVersionOAuthOptions.cs))
-binds from the `YouVersionOAuth` configuration section and controls every endpoint the flow talks to:
+`BibleOAuthOptions` ([`Platform.API/OAuth/BibleOAuthOptions.cs`](../Platform.API/OAuth/BibleOAuthOptions.cs))
+binds from the `BibleOAuth` configuration section and controls every endpoint the flow talks to:
 
 | Option | Default | Notes |
 |---|---|---|
-| `ClientId` | *(required)* | Your registered client id. YouVersion apps can reuse their app key as the client id. |
+| `ClientId` | *(required)* | Your registered client id. Apps can reuse their app key as the client id. |
 | `RedirectUri` | `null` | Must match a URI registered in the developer portal. |
 | `AuthorizationEndpoint` | `https://api.youversion.com/auth/authorize` | Where `BuildAuthorizationUrl` sends the user. |
 | `AuthCallbackEndpoint` | `https://api.youversion.com/auth/callback` | Used internally by `CompleteIdentityCallbackAsync` — see Step 4. |
 | `TokenEndpoint` | `https://api.youversion.com/auth/token` | Where codes and refresh tokens are redeemed. |
-| `Scopes` | `"openid profile email"` | The only scopes YouVersion's sign-in API supports. There is no scope for resource permissions like `highlights` — those go through the separate Data Exchange flow (see [below](#requesting-additional-permissions-data-exchange)). |
+| `Scopes` | `"openid profile email"` | The only scopes the platform's sign-in API supports. There is no scope for resource permissions like `highlights` — those go through the separate Data Exchange flow (see [below](#requesting-additional-permissions-data-exchange)). |
 | `OAuthTokenExpiryBufferSeconds` | `60` | How early `OAuthBearerTokenHandler` proactively refreshes (Step 9). |
 
 ## Step 2 — Build the authorization URL
 
 Call `BuildAuthorizationUrl` to generate a fresh PKCE pair and the redirect URL in one step
-([`YouVersionOAuthClient.cs:44-92`](../Platform.API/OAuth/YouVersionOAuthClient.cs)):
+([`BibleOAuthClient.cs:44-92`](../Platform.API/OAuth/BibleOAuthClient.cs)):
 
 ```csharp
 var state = GenerateRandomState(); // your own random string, or omit to let the SDK generate one
@@ -140,12 +140,12 @@ in the URL you're about to send the browser to.
 
 ## Step 3 — Redirect the user
 
-Send the browser to `authRequest.AuthorizationUrl`. The user authenticates with YouVersion, and
-YouVersion redirects back to your `RedirectUri`.
+Send the browser to `authRequest.AuthorizationUrl`. The user authenticates with the platform, and
+the platform redirects back to your `RedirectUri`.
 
 ## Step 4 — Handle the callback
 
-This is the part that trips people up: **YouVersion's redirect back does not always carry a
+This is the part that trips people up: **the platform's redirect back does not always carry a
 redeemable `code`.** There are two shapes, and your callback route needs to handle both.
 
 ### Shape A — Browser clients: identity-only redirect (the common case)
@@ -156,9 +156,9 @@ The redirect carries identity fields instead of a code:
 GET /?yvp_id=...&user_name=...&user_email=...&profile_picture=...&state=...
 ```
 
-`yvp_id` is the reliable discriminator — only a genuine YouVersion redirect sets it. To finish
+`yvp_id` is the reliable discriminator — only a genuine platform redirect sets it. To finish
 signing in, validate `state` and then call `CompleteIdentityCallbackAsync`
-([`YouVersionOAuthClient.cs:141-199`](../Platform.API/OAuth/YouVersionOAuthClient.cs)), which does
+([`BibleOAuthClient.cs:141-199`](../Platform.API/OAuth/BibleOAuthClient.cs)), which does
 the remaining two hops **for you**:
 
 ```csharp
@@ -208,7 +208,7 @@ var token = await oauthClient.ExchangeCodeAsync(code, storedCodeVerifier);
 ### CSRF check: `ValidateState`
 
 Both shapes must validate `state` before doing anything else
-([`YouVersionOAuthClient.cs:95-107`](../Platform.API/OAuth/YouVersionOAuthClient.cs)):
+([`BibleOAuthClient.cs:95-107`](../Platform.API/OAuth/BibleOAuthClient.cs)):
 
 ```csharp
 public bool ValidateState(string? expectedState, string? actualState)
@@ -311,16 +311,16 @@ public interface ITokenProvider
 }
 ```
 
-`AddYouVersionOAuth` registers `InMemoryTokenProvider` via `TryAddSingleton` if nothing else was
+`AddBibleOAuth` registers `InMemoryTokenProvider` via `TryAddSingleton` if nothing else was
 registered first. **This default is a process-wide singleton** — fine for a single-user CLI tool,
 but in any multi-user host (Blazor Server, a web app) it leaks one user's token to every other
 user on the same process.
 
-For anything multi-user, register your own scoped provider **before** `AddYouVersionOAuth`:
+For anything multi-user, register your own scoped provider **before** `AddBibleOAuth`:
 
 ```csharp
 builder.Services.AddScoped<ITokenProvider, MyPerUserTokenProvider>();
-builder.Services.AddYouVersionOAuth(o => { ... });
+builder.Services.AddBibleOAuth(o => { ... });
 ```
 
 The registration order matters because of `TryAddSingleton` semantics — if OAuth is registered
@@ -390,29 +390,29 @@ worth reading once the core sign-in flow above is working.
 
 | Symptom | Cause |
 |---|---|
-| `InvalidOperationException` mentioning `AddYouVersionApiClients` | `AddYouVersionOAuth` was called before `AddYouVersionApiClients`. |
+| `InvalidOperationException` mentioning `AddBibleApiClients` | `AddBibleOAuth` was called before `AddBibleApiClients`. |
 | Callback never carries `code`, only `yvp_id`/`user_name`/etc. | Expected — this is Shape A. Call `CompleteIdentityCallbackAsync`, not `ExchangeCodeAsync`, for this shape. |
 | `ValidateState` always returns `false` | Check the session/store used to persist `state` between the redirect out and the callback — a common cause is losing session state across the external redirect (e.g. cookie not sent, session expired). |
 | Token appears valid but `IsExpired` returns `true` immediately after loading from storage | `ReceivedAt` is `[JsonIgnore]` — your `ITokenProvider` must persist and restore it separately, or it resets to "now" (see Step 6) or, depending on direction, always looks stale. |
-| One user's session shows another user's sign-in state | `InMemoryTokenProvider` (the default) is a process-wide singleton — register a scoped `ITokenProvider` before `AddYouVersionOAuth` (Step 7). |
+| One user's session shows another user's sign-in state | `InMemoryTokenProvider` (the default) is a process-wide singleton — register a scoped `ITokenProvider` before `AddBibleOAuth` (Step 7). |
 | `RefreshTokenAsync` throws `InvalidOperationException` | No refresh token stored (never issued, or already cleared by sign-out) — user must sign in again. |
-| `YouVersionApiException` with `401`/`403` on an API call | Token missing/expired/not authorized for that resource — for `highlights`, confirm the Data Exchange consent was actually granted, not just requested. |
+| `BibleApiException` with `401`/`403` on an API call | Token missing/expired/not authorized for that resource — for `highlights`, confirm the Data Exchange consent was actually granted, not just requested. |
 
 ## File reference
 
 | File | Purpose |
 |---|---|
-| [`Platform.API/OAuth/IYouVersionOAuthClient.cs`](../Platform.API/OAuth/IYouVersionOAuthClient.cs) | Public interface — the entire flow's API surface. |
-| [`Platform.API/OAuth/YouVersionOAuthClient.cs`](../Platform.API/OAuth/YouVersionOAuthClient.cs) | Implementation: PKCE generation, URL building, code exchange, refresh, Data Exchange. |
-| [`Platform.API/OAuth/YouVersionOAuthOptions.cs`](../Platform.API/OAuth/YouVersionOAuthOptions.cs) | Configuration (client id, endpoints, scopes, refresh buffer). |
+| [`Platform.API/OAuth/IBibleOAuthClient.cs`](../Platform.API/OAuth/IBibleOAuthClient.cs) | Public interface — the entire flow's API surface. |
+| [`Platform.API/OAuth/BibleOAuthClient.cs`](../Platform.API/OAuth/BibleOAuthClient.cs) | Implementation: PKCE generation, URL building, code exchange, refresh, Data Exchange. |
+| [`Platform.API/OAuth/BibleOAuthOptions.cs`](../Platform.API/OAuth/BibleOAuthOptions.cs) | Configuration (client id, endpoints, scopes, refresh buffer). |
 | [`Platform.API/OAuth/OAuthTokenResponse.cs`](../Platform.API/OAuth/OAuthTokenResponse.cs) | Token shape, expiry check, claim helpers. |
 | [`Platform.API/OAuth/OAuthModels.cs`](../Platform.API/OAuth/OAuthModels.cs) | `PkceValues` (verifier/challenge/method). |
 | [`Platform.API/OAuth/AuthorizationRequest.cs`](../Platform.API/OAuth/AuthorizationRequest.cs) | Return type of `BuildAuthorizationUrl` (URL + PKCE values). |
 | [`Platform.API/OAuth/ITokenProvider.cs`](../Platform.API/OAuth/ITokenProvider.cs) | Pluggable token storage abstraction. |
 | [`Platform.API/OAuth/InMemoryTokenProvider.cs`](../Platform.API/OAuth/InMemoryTokenProvider.cs) | Default (process-wide singleton) storage. |
 | [`Platform.API/Http/OAuthBearerTokenHandler.cs`](../Platform.API/Http/OAuthBearerTokenHandler.cs) | Transparent bearer-header attachment + single-flight refresh. |
-| [`Platform.API/Extensions/ServiceCollectionExtensions.cs`](../Platform.API/Extensions/ServiceCollectionExtensions.cs) | `AddYouVersionApiClients` / `AddYouVersionOAuth` DI wiring. |
-| [`Platform.SDK.Components/Auth/YouVersionAuth.razor`](../Platform.SDK.Components/Auth/YouVersionAuth.razor) | Reusable Blazor sign-in/out widget. |
+| [`Platform.API/Extensions/ServiceCollectionExtensions.cs`](../Platform.API/Extensions/ServiceCollectionExtensions.cs) | `AddBibleApiClients` / `AddBibleOAuth` DI wiring. |
+| [`Platform.SDK.Components/Auth/BibleAuth.razor`](../Platform.SDK.Components/Auth/BibleAuth.razor) | Reusable Blazor sign-in/out widget. |
 | [`PlatformTestApp/Program.cs`](../PlatformTestApp/Program.cs) | Full reference implementation of both callback shapes. |
 | [`PlatformTestApp/Auth/SessionTokenProvider.cs`](../PlatformTestApp/Auth/SessionTokenProvider.cs) | Example per-session `ITokenProvider` for multi-user hosts. |
 | [`Platform.API.Tests/OAuth/OAuthClientTests.cs`](../Platform.API.Tests/OAuth/OAuthClientTests.cs) | Exhaustive behavior reference (query shapes, edge cases, error handling). |

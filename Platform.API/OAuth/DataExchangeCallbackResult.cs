@@ -4,7 +4,7 @@ namespace Platform.API.OAuth;
 
 /// <summary>
 /// The outcome of a Data Exchange approval, as reported by the <c>data_exchange_status</c> query
-/// parameter on the callback YouVersion redirects to.
+/// parameter on the callback the platform redirects to.
 /// </summary>
 public enum DataExchangeStatus
 {
@@ -25,8 +25,8 @@ public enum DataExchangeStatus
 
 /// <summary>
 /// The parsed outcome of a Data Exchange approval callback. Returned by
-/// <see cref="IYouVersionOAuthClient.ParseDataExchangeCallback"/> and
-/// <see cref="IYouVersionOAuthClient.CompleteDataExchangeApprovalAsync"/>.
+/// <see cref="IBibleOAuthClient.ParseDataExchangeCallback"/> and
+/// <see cref="IBibleOAuthClient.CompleteDataExchangeApprovalAsync"/>.
 /// </summary>
 public sealed record DataExchangeCallbackResult
 {

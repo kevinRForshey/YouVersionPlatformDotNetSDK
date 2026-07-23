@@ -188,13 +188,13 @@ public sealed class OAuthClientTests
     }
 
     [Fact]
-    public async Task ExchangeCodeAsync_ThrowsYouVersionApiException_WhenApiReturnsError()
+    public async Task ExchangeCodeAsync_ThrowsBibleApiException_WhenApiReturnsError()
     {
         var client = BuildClient(HttpStatusCode.BadRequest, """{"error":"invalid_grant"}""");
 
         var act = () => client.ExchangeCodeAsync("bad-code", "verifier");
 
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.BadRequest);
     }
 
@@ -328,7 +328,7 @@ public sealed class OAuthClientTests
     }
 
     [Fact]
-    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionApiException_WhenNoLocationHeaderReturned()
+    public async Task CompleteIdentityCallbackAsync_ThrowsBibleApiException_WhenNoLocationHeaderReturned()
     {
         var noLocationResponse = new HttpResponseMessage(HttpStatusCode.BadGateway)
         {
@@ -339,12 +339,12 @@ public sealed class OAuthClientTests
 
         var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
 
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.BadGateway);
     }
 
     [Fact]
-    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionEmptyResponseException_WhenCodeMissingFromLocation()
+    public async Task CompleteIdentityCallbackAsync_ThrowsBibleEmptyResponseException_WhenCodeMissingFromLocation()
     {
         var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
         identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?other=value");
@@ -353,11 +353,11 @@ public sealed class OAuthClientTests
 
         var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
 
-        await act.Should().ThrowAsync<YouVersionEmptyResponseException>();
+        await act.Should().ThrowAsync<BibleEmptyResponseException>();
     }
 
     [Fact]
-    public async Task CompleteIdentityCallbackAsync_ThrowsYouVersionEmptyResponseException_WhenCodeIsBlankInLocation()
+    public async Task CompleteIdentityCallbackAsync_ThrowsBibleEmptyResponseException_WhenCodeIsBlankInLocation()
     {
         var identityRedirect = new HttpResponseMessage(HttpStatusCode.Found);
         identityRedirect.Headers.Location = new Uri("https://auth.youversion.com/auth/callback?code=");
@@ -366,7 +366,7 @@ public sealed class OAuthClientTests
 
         var act = () => client.CompleteIdentityCallbackAsync("state-abc", "yvp-123", null, null, null, "verifier");
 
-        await act.Should().ThrowAsync<YouVersionEmptyResponseException>();
+        await act.Should().ThrowAsync<BibleEmptyResponseException>();
     }
 
     [Fact]
@@ -570,14 +570,14 @@ public sealed class OAuthClientTests
     }
 
     [Fact]
-    public async Task RequestPermissionsAsync_ThrowsYouVersionApiException_OnError()
+    public async Task RequestPermissionsAsync_ThrowsBibleApiException_OnError()
     {
         var tokenProvider = new FakeTokenProvider(MakeStoredToken());
         var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""", tokenProvider);
 
         var act = () => client.RequestPermissionsAsync(["highlights"]);
 
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
     }
 
@@ -735,13 +735,13 @@ public sealed class OAuthClientTests
     }
 
     [Fact]
-    public async Task CompleteDataExchangeApprovalAsync_ThrowsYouVersionApiException_WhenResponseIsNotSeeOther()
+    public async Task CompleteDataExchangeApprovalAsync_ThrowsBibleApiException_WhenResponseIsNotSeeOther()
     {
         var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""");
 
         var act = () => client.CompleteDataExchangeApprovalAsync("dx-tok");
 
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
     }
 
@@ -848,7 +848,7 @@ public sealed class OAuthClientTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static YouVersionOAuthClient BuildClient(
+    private static BibleOAuthClient BuildClient(
         HttpStatusCode status,
         string json,
         FakeTokenProvider? tokenProvider = null,
@@ -859,51 +859,51 @@ public sealed class OAuthClientTests
         {
             BaseAddress = new Uri("https://auth.youversion.com")
         };
-        var options = Options.Create(new YouVersionOAuthOptions
+        var options = Options.Create(new BibleOAuthOptions
         {
             ClientId = "test-client",
             RedirectUri = new Uri("https://localhost/callback"),
             AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
-        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
-        return new YouVersionOAuthClient(
+        var apiOptions = Options.Create(new BibleApiOptions { AppKey = appKey ?? string.Empty });
+        return new BibleOAuthClient(
             httpClient,
             options,
             apiOptions,
             tokenProvider ?? new FakeTokenProvider(),
-            NullLogger<YouVersionOAuthClient>.Instance);
+            NullLogger<BibleOAuthClient>.Instance);
     }
 
-    private static YouVersionOAuthClient BuildClientFromHandler(
+    private static BibleOAuthClient BuildClientFromHandler(
         FakeHttpMessageHandler handler,
         FakeTokenProvider? tokenProvider = null,
         string? appKey = "test-app-key")
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
-        var options = Options.Create(new YouVersionOAuthOptions
+        var options = Options.Create(new BibleOAuthOptions
         {
             ClientId = "test-client",
             RedirectUri = new Uri("https://localhost/callback"),
             AuthorizationEndpoint = new Uri("https://auth.youversion.com/oauth2/authorize"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
-        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
-        return new YouVersionOAuthClient(
+        var apiOptions = Options.Create(new BibleApiOptions { AppKey = appKey ?? string.Empty });
+        return new BibleOAuthClient(
             httpClient,
             options,
             apiOptions,
             tokenProvider ?? new FakeTokenProvider(),
-            NullLogger<YouVersionOAuthClient>.Instance);
+            NullLogger<BibleOAuthClient>.Instance);
     }
 
-    private static YouVersionOAuthClient BuildClientFromSequencedHandler(
+    private static BibleOAuthClient BuildClientFromSequencedHandler(
         SequencedHttpMessageHandler handler,
         FakeTokenProvider? tokenProvider = null,
         string? appKey = "test-app-key")
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://auth.youversion.com") };
-        var options = Options.Create(new YouVersionOAuthOptions
+        var options = Options.Create(new BibleOAuthOptions
         {
             ClientId = "test-client",
             RedirectUri = new Uri("https://localhost/callback"),
@@ -911,13 +911,13 @@ public sealed class OAuthClientTests
             AuthCallbackEndpoint = new Uri("https://auth.youversion.com/auth/callback"),
             TokenEndpoint = new Uri("https://auth.youversion.com/oauth2/token")
         });
-        var apiOptions = Options.Create(new YouVersionApiOptions { AppKey = appKey ?? string.Empty });
-        return new YouVersionOAuthClient(
+        var apiOptions = Options.Create(new BibleApiOptions { AppKey = appKey ?? string.Empty });
+        return new BibleOAuthClient(
             httpClient,
             options,
             apiOptions,
             tokenProvider ?? new FakeTokenProvider(),
-            NullLogger<YouVersionOAuthClient>.Instance);
+            NullLogger<BibleOAuthClient>.Instance);
     }
 
     private static OAuthTokenResponse MakeStoredToken() => new()

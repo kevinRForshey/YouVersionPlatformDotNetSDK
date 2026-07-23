@@ -14,7 +14,7 @@ namespace Platform.API.Http;
 internal static class ApiRequestHelper
 {
     /// <summary>
-    /// Throws <see cref="YouVersionApiException"/> when the response has a non-success
+    /// Throws <see cref="BibleApiException"/> when the response has a non-success
     /// status code, logging the failure details before throwing.
     /// </summary>
     internal static async Task EnsureSuccessAsync(
@@ -29,9 +29,9 @@ internal static class ApiRequestHelper
             logger.LogError(
                 "API request to '{Url}' failed with HTTP {StatusCode} {ReasonPhrase}. Response body: {Body}",
                 url, (int)response.StatusCode, response.ReasonPhrase, body);
-            throw new YouVersionApiException(
+            throw new BibleApiException(
                 response.StatusCode,
-                $"YouVersion API request to '{url}' failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).",
+                $"API request to '{url}' failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).",
                 body);
         }
     }

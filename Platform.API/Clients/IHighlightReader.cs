@@ -1,5 +1,5 @@
 using Platform.API.Models;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.API.Clients;
 

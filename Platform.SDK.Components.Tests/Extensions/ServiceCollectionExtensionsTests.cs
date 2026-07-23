@@ -11,11 +11,11 @@ namespace Platform.SDK.Components.Tests.Extensions;
 public sealed class ServiceCollectionExtensionsTests
 {
     [Fact]
-    public void AddYouVersionComponents_RegistersAllSixServicesAsScoped()
+    public void AddBibleComponents_RegistersAllSixServicesAsScoped()
     {
         var services = new ServiceCollection();
 
-        services.AddYouVersionComponents();
+        services.AddBibleComponents();
 
         services.Should().Contain(d => d.ServiceType == typeof(IVersionService) && d.Lifetime == ServiceLifetime.Scoped);
         services.Should().Contain(d => d.ServiceType == typeof(IBookService) && d.Lifetime == ServiceLifetime.Scoped);
@@ -26,35 +26,35 @@ public sealed class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddYouVersionComponents_ReturnsSameServiceCollectionForChaining()
+    public void AddBibleComponents_ReturnsSameServiceCollectionForChaining()
     {
         var services = new ServiceCollection();
 
-        var result = services.AddYouVersionComponents();
+        var result = services.AddBibleComponents();
 
         result.Should().BeSameAs(services);
     }
 
     [Fact]
-    public void AddYouVersionComponents_DoesNotOverrideExistingRegistrations()
+    public void AddBibleComponents_DoesNotOverrideExistingRegistrations()
     {
         var services = new ServiceCollection();
         services.AddScoped<IVersionService, FakeVersionService>();
 
-        services.AddYouVersionComponents();
+        services.AddBibleComponents();
 
         var provider = services.BuildServiceProvider();
         provider.GetRequiredService<IVersionService>().Should().BeOfType<FakeVersionService>();
     }
 
     [Fact]
-    public void AddYouVersionComponents_ResolvesAllRegisteredServicesFromContainer()
+    public void AddBibleComponents_ResolvesAllRegisteredServicesFromContainer()
     {
         var services = new ServiceCollection();
         services.AddSingleton(Mock.Of<IBibleClient>());
         services.AddSingleton(Mock.Of<IPassageClient>());
         services.AddSingleton(Mock.Of<IHighlightClient>());
-        services.AddYouVersionComponents();
+        services.AddBibleComponents();
 
         var provider = services.BuildServiceProvider();
 
@@ -67,11 +67,11 @@ public sealed class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddYouVersionComponents_NullServices_ThrowsArgumentNullException()
+    public void AddBibleComponents_NullServices_ThrowsArgumentNullException()
     {
         ServiceCollection? services = null;
 
-        var act = () => services!.AddYouVersionComponents();
+        var act = () => services!.AddBibleComponents();
 
         act.Should().Throw<ArgumentNullException>();
     }

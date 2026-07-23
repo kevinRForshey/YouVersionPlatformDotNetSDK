@@ -1,0 +1,25 @@
+Bible Platform SDK for .NET
+Copyright 2026 Kevin Forshey
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+---
+
+This is a reference implementation, not a distributed SDK. This repository
+demonstrates one way to integrate the Platform API in a .NET solution —
+architecture patterns, OAuth/PKCE flow, typed clients, Blazor components.
+It is not affiliated with, endorsed by, or officially supported by
+YouVersion or Life.Church, and is not published as an installable package.
+To use the platform, obtain your own App Key and review the platform's
+Developer Terms of Use at developers.youversion.com. This code is provided
+as-is for educational/reference purposes; clone and adapt it for your own
+project rather than treating it as a dependency. The included Blazor reader
+components are a minimal integration demo of the Platform API's reading/
+highlighting endpoints, not a Bible-reading application in their own right,
+and are not intended to replicate or compete with the YouVersion Bible App.
+
+The `BiblePlatform.UsfmReferences` package is an independent, unofficial
+C# port of youversion/usfm-references (https://github.com/YouVersion/usfm-references),
+an MIT-licensed Python library. It is not affiliated with or endorsed by
+YouVersion.

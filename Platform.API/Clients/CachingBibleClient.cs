@@ -13,7 +13,7 @@ namespace Platform.API.Clients;
 internal sealed class CachingBibleClient(
     BibleClient inner,
     HybridCache cache,
-    YouVersionCacheOptions opts) : IBibleClient
+    BibleCacheOptions opts) : IBibleClient
 {
     public async Task<PagedResult<BibleVersionSummary>> GetVersionsAsync(
         string languageRange = "en",

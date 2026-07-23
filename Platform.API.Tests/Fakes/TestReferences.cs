@@ -1,4 +1,4 @@
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.API.Tests.Fakes;
 

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Platform.API.Clients;
 
 /// <summary>
-/// Request body sent when creating or updating a highlight via the YouVersion Platform API.
+/// Request body sent when creating or updating a highlight via the Platform API.
 /// </summary>
 internal sealed record CreateOrUpdateHighlightRequest
 {

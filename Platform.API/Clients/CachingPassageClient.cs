@@ -1,14 +1,14 @@
 using Microsoft.Extensions.Caching.Hybrid;
 using Platform.API.Configuration;
 using Platform.API.Models;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.API.Clients;
 
 internal sealed class CachingPassageClient(
     PassageClient inner,
     HybridCache cache,
-    YouVersionCacheOptions opts) : IPassageClient
+    BibleCacheOptions opts) : IPassageClient
 {
     public async Task<Passage> GetPassageAsync(
         int versionId,

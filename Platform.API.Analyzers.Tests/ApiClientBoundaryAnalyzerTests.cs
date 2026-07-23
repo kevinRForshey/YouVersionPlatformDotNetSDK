@@ -84,7 +84,7 @@ public sealed class ApiClientBoundaryAnalyzerTests
 
     [Theory]
     [InlineData("Platform.API.OAuth", "ITokenProvider")]
-    [InlineData("Platform.API.Exceptions", "YouVersionApiException")]
+    [InlineData("Platform.API.Exceptions", "BibleApiException")]
     public async Task QualifiedTypeReference_ForOtherForbiddenNamespaces_IsFlagged(string ns, string typeName)
     {
         var source = $$"""

@@ -3,7 +3,7 @@ using Moq;
 using Platform.API.Clients;
 using Platform.API.Models;
 using Xunit;
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.SDK.Services.Tests;
 

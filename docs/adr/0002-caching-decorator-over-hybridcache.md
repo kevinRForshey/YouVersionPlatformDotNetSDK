@@ -17,7 +17,7 @@ an ASP.NET output-cache layer upstream), and complicate testing the HTTP logic i
 Keep `BibleClient` and `PassageClient` cache-unaware. Caching is a separate decorator
 (`CachingBibleClient`, `CachingPassageClient`) that wraps the concrete client, backed by
 `Microsoft.Extensions.Caching.Hybrid`'s `HybridCache` (in-process L1, optional Redis L2). Registration
-is opt-in: `AddYouVersionApiClients` registers the raw clients; a separate `AddYouVersionCaching()` call
+is opt-in: `AddBibleApiClients` registers the raw clients; a separate `AddBibleCaching()` call
 replaces the `IBibleClient`/`IPassageClient` DI registrations with the caching decorators, resolving the
 concrete typed client directly (`sp.GetRequiredService<BibleClient>()`) to avoid a circular dependency
 through the interface.
@@ -30,9 +30,9 @@ shape (`yv:index:{versionId}`) to reason about instead of four.
 
 ## Consequences
 
-- Consumers who don't call `AddYouVersionCaching()` get direct, uncached HTTP calls with no surprise
+- Consumers who don't call `AddBibleCaching()` get direct, uncached HTTP calls with no surprise
   behavior — caching is additive, not implicit.
-- Cache invalidation is TTL-only (`YouVersionCacheOptions`); there's no explicit invalidation API. This
+- Cache invalidation is TTL-only (`BibleCacheOptions`); there's no explicit invalidation API. This
   is acceptable because Bible structural/version data changes rarely, but would need revisiting if a
   future endpoint (e.g. highlights) were added to this same decorator pattern, since highlight data is
   per-user and mutates far more often.

@@ -61,11 +61,11 @@ public sealed class HighlightClientTests
     [InlineData(HttpStatusCode.Unauthorized)]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task GetHighlightsAsync_ThrowsYouVersionApiException_OnError(HttpStatusCode status)
+    public async Task GetHighlightsAsync_ThrowsBibleApiException_OnError(HttpStatusCode status)
     {
         var client = BuildClient(status, """{"error":"fail"}""");
         var act = () => client.GetHighlightsAsync(3034, TestReferences.John316);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == status);
     }
 
@@ -129,11 +129,11 @@ public sealed class HighlightClientTests
     }
 
     [Fact]
-    public async Task CreateOrUpdateHighlightAsync_ThrowsYouVersionApiException_OnError()
+    public async Task CreateOrUpdateHighlightAsync_ThrowsBibleApiException_OnError()
     {
         var client = BuildClient(HttpStatusCode.Unauthorized, """{"error":"unauthorized"}""");
         var act = () => client.CreateOrUpdateHighlightAsync(3034, TestReferences.John316, "44aa44");
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.Unauthorized);
     }
 
@@ -183,11 +183,11 @@ public sealed class HighlightClientTests
     }
 
     [Fact]
-    public async Task ClearHighlightsAsync_ThrowsYouVersionApiException_WhenNotFound()
+    public async Task ClearHighlightsAsync_ThrowsBibleApiException_WhenNotFound()
     {
         var client = BuildClient(HttpStatusCode.NotFound, """{"error":"not found"}""");
         var act = () => client.ClearHighlightsAsync(3034, TestReferences.John316);
-        await act.Should().ThrowAsync<YouVersionApiException>()
+        await act.Should().ThrowAsync<BibleApiException>()
             .Where(e => e.StatusCode == HttpStatusCode.NotFound);
     }
 

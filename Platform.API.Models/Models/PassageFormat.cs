@@ -8,6 +8,6 @@ public enum PassageFormat
     /// <summary>Plain-text content with no markup.</summary>
     Text,
 
-    /// <summary>HTML content styled for the YouVersion Bible stylesheet.</summary>
+    /// <summary>HTML content styled for the platform's Bible stylesheet.</summary>
     Html
 }

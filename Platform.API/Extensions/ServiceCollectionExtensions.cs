@@ -11,12 +11,12 @@ using Platform.API.Configuration;
 using Platform.API.Http;
 using Platform.API.OAuth;
 
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.API.Extensions;
 
 /// <summary>
-/// Extension methods for registering YouVersion Platform API clients with an
+/// Extension methods for registering Platform API clients with an
 /// <see cref="IServiceCollection"/>.
 /// </summary>
 public static class ServiceCollectionExtensions
@@ -25,8 +25,8 @@ public static class ServiceCollectionExtensions
     /// The named-HttpClient registration name used for <see cref="HighlightClient"/>'s pipeline.
     /// </summary>
     /// <remarks>
-    /// <see cref="AddYouVersionOAuth"/> appends <see cref="OAuthBearerTokenHandler"/> onto this same
-    /// named client after <see cref="AddYouVersionApiClients(IServiceCollection, Action{Configuration.YouVersionApiOptions})"/>
+    /// <see cref="AddBibleOAuth"/> appends <see cref="OAuthBearerTokenHandler"/> onto this same
+    /// named client after <see cref="AddBibleApiClients(IServiceCollection, Action{Configuration.BibleApiOptions})"/>
     /// has registered it. Both call sites reference this single constant instead of independently
     /// deriving <c>typeof(HighlightClient).Name</c>, so a rename of <see cref="HighlightClient"/> can't
     /// silently desynchronize the two registrations.
@@ -34,32 +34,32 @@ public static class ServiceCollectionExtensions
     internal const string HighlightClientName = nameof(HighlightClient);
 
     /// <summary>
-    /// Registers the YouVersion Platform API clients (<see cref="IBibleClient"/>,
+    /// Registers the Platform API clients (<see cref="IBibleClient"/>,
     /// <see cref="IPassageClient"/>, and <see cref="IHighlightClient"/>) and their
     /// supporting infrastructure with the dependency-injection container.
     /// </summary>
     /// <param name="services">The service collection to add to.</param>
     /// <param name="configureOptions">
-    /// A delegate to configure <see cref="YouVersionApiOptions"/>.
-    /// At minimum, set <see cref="YouVersionApiOptions.AppKey"/>.
+    /// A delegate to configure <see cref="BibleApiOptions"/>.
+    /// At minimum, set <see cref="BibleApiOptions.AppKey"/>.
     /// </param>
     /// <returns>The original <paramref name="services"/> for chaining.</returns>
     /// <example>
     /// <code>
-    /// builder.Services.AddYouVersionApiClients(options =>
+    /// builder.Services.AddBibleApiClients(options =>
     /// {
-    ///     options.AppKey = builder.Configuration["YouVersionApi:AppKey"]!;
+    ///     options.AppKey = builder.Configuration["BibleApi:AppKey"]!;
     /// });
     /// </code>
     /// </example>
-    public static IServiceCollection AddYouVersionApiClients(
+    public static IServiceCollection AddBibleApiClients(
         this IServiceCollection services,
-        Action<YouVersionApiOptions> configureOptions)
+        Action<BibleApiOptions> configureOptions)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configureOptions);
 
-        services.AddOptions<YouVersionApiOptions>()
+        services.AddOptions<BibleApiOptions>()
             .Configure(configureOptions)
             .ValidateDataAnnotations()
             .ValidateOnStart();
@@ -77,30 +77,30 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers the YouVersion Platform API clients by binding
-    /// <see cref="YouVersionApiOptions"/> from the <c>YouVersionApi</c> configuration section.
+    /// Registers the Platform API clients by binding
+    /// <see cref="BibleApiOptions"/> from the <c>BibleApi</c> configuration section.
     /// </summary>
     /// <param name="services">The service collection to add to.</param>
     /// <param name="configuration">
     /// An <see cref="Microsoft.Extensions.Configuration.IConfiguration"/> instance.
-    /// The <c>YouVersionApi</c> section must contain at least an <c>AppKey</c> value.
+    /// The <c>BibleApi</c> section must contain at least an <c>AppKey</c> value.
     /// </param>
     /// <returns>The original <paramref name="services"/> for chaining.</returns>
     /// <example>
     /// <code>
-    /// // appsettings.json:  { "YouVersionApi": { "AppKey": "your-key-here" } }
-    /// builder.Services.AddYouVersionApiClients(builder.Configuration);
+    /// // appsettings.json:  { "BibleApi": { "AppKey": "your-key-here" } }
+    /// builder.Services.AddBibleApiClients(builder.Configuration);
     /// </code>
     /// </example>
-    public static IServiceCollection AddYouVersionApiClients(
+    public static IServiceCollection AddBibleApiClients(
         this IServiceCollection services,
         Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddOptions<YouVersionApiOptions>()
-            .Bind(configuration.GetSection(YouVersionApiOptions.SectionName))
+        services.AddOptions<BibleApiOptions>()
+            .Bind(configuration.GetSection(BibleApiOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -118,59 +118,59 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers the YouVersion OAuth 2.0 service (<see cref="IYouVersionOAuthClient"/>),
+    /// Registers the platform's OAuth 2.0 service (<see cref="IBibleOAuthClient"/>),
     /// an <see cref="InMemoryTokenProvider"/> as the default <see cref="ITokenProvider"/>,
     /// and upgrades <see cref="IHighlightClient"/> to use bearer-token authentication.
     /// </summary>
     /// <param name="services">The service collection to add to.</param>
-    /// <param name="configureOptions">A delegate to configure <see cref="YouVersionOAuthOptions"/>.</param>
+    /// <param name="configureOptions">A delegate to configure <see cref="BibleOAuthOptions"/>.</param>
     /// <returns>The original <paramref name="services"/> for chaining.</returns>
     /// <example>
     /// <code>
-    /// builder.Services.AddYouVersionApiClients(o => o.AppKey = "my-key")
-    ///                 .AddYouVersionOAuth(o =>
+    /// builder.Services.AddBibleApiClients(o => o.AppKey = "my-key")
+    ///                 .AddBibleOAuth(o =>
     ///                 {
     ///                     o.Scopes = "openid profile email";
     ///                 });
     /// </code>
     /// </example>
-    public static IServiceCollection AddYouVersionOAuth(
+    public static IServiceCollection AddBibleOAuth(
         this IServiceCollection services,
-        Action<YouVersionOAuthOptions> configureOptions)
+        Action<BibleOAuthOptions> configureOptions)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configureOptions);
 
         if (!HasApiClientRegistration(services))
             throw new InvalidOperationException(
-                "AddYouVersionApiClients must be called before AddYouVersionOAuth so API options and HTTP pipelines are configured.");
+                "AddBibleApiClients must be called before AddBibleOAuth so API options and HTTP pipelines are configured.");
 
-        services.AddOptions<YouVersionOAuthOptions>()
+        services.AddOptions<BibleOAuthOptions>()
             .Configure(configureOptions)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
         // Default in-memory token provider
-        // by registering ITokenProvider BEFORE calling AddYouVersionOAuth.
+        // by registering ITokenProvider BEFORE calling AddBibleOAuth.
         services.TryAddSingleton<ITokenProvider, InMemoryTokenProvider>();
 
         services.AddTransient<OAuthBearerTokenHandler>();
 
         // OAuth HTTP client — no app key or bearer required on auth endpoints.
         // BaseAddress is intentionally not set; PostTokenRequestAsync uses the absolute
-        // TokenEndpoint URI from YouVersionOAuthOptions directly.
+        // TokenEndpoint URI from BibleOAuthOptions directly.
         // AllowAutoRedirect is disabled because CompleteDataExchangeApprovalAsync needs to read
         // the `Location` header off a raw 303 response instead of having HttpClient silently
         // follow it to the caller's own callback URL.
         services
-            .AddHttpClient<IYouVersionOAuthClient, YouVersionOAuthClient>()
+            .AddHttpClient<IBibleOAuthClient, BibleOAuthClient>()
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .AddHttpMessageHandler<OutboundRateLimitingHandler>()
             .AddStandardResilienceHandler();
 
         // Append OAuthBearerTokenHandler to IHighlightClient's existing pipeline
-        // (AppKeyDelegatingHandler was already added by AddYouVersionApiClients).
-        // AddYouVersionApiClients MUST be called first.
+        // (AppKeyDelegatingHandler was already added by AddBibleApiClients).
+        // AddBibleApiClients MUST be called first.
         services.AddHttpClient(HighlightClientName)
             .AddHttpMessageHandler<OAuthBearerTokenHandler>();
 
@@ -190,7 +190,7 @@ public static class ServiceCollectionExtensions
         void ConfigureClient(IServiceProvider serviceProvider, HttpClient httpClient)
         {
             var options = serviceProvider
-                .GetRequiredService<IOptions<YouVersionApiOptions>>()
+                .GetRequiredService<IOptions<BibleApiOptions>>()
                 .Value;
 
             httpClient.BaseAddress = options.BaseAddress;
@@ -201,7 +201,7 @@ public static class ServiceCollectionExtensions
         // resolved directly by name (e.g. by caching decorators without creating a circular
         // dependency through the interface). When httpClientName is supplied, the underlying
         // named-client registration uses that explicit name instead of the framework's implicit
-        // typeof(TImplementation).Name convention, so other code (e.g. AddYouVersionOAuth) can
+        // typeof(TImplementation).Name convention, so other code (e.g. AddBibleOAuth) can
         // reference the same named pipeline via a shared constant rather than re-deriving it.
         var builder = httpClientName is null
             ? services.AddHttpClient<TImplementation>(ConfigureClient)
@@ -213,12 +213,12 @@ public static class ServiceCollectionExtensions
             .AddStandardResilienceHandler()
             // AddStandardResilienceHandler()'s own default TotalRequestTimeout/AttemptTimeout
             // (30s/10s) are independent of HttpClient.Timeout above, so raising
-            // YouVersionApiOptions.Timeout would otherwise be silently capped by the resilience
+            // BibleApiOptions.Timeout would otherwise be silently capped by the resilience
             // pipeline's shorter default before it ever reached the configured HttpClient.Timeout.
             .Configure((resilienceOptions, serviceProvider) =>
             {
                 var timeout = serviceProvider
-                    .GetRequiredService<IOptions<YouVersionApiOptions>>()
+                    .GetRequiredService<IOptions<BibleApiOptions>>()
                     .Value
                     .Timeout;
 
@@ -228,14 +228,14 @@ public static class ServiceCollectionExtensions
             });
 
         // Forward the public interface to the concrete implementation.
-        // AddYouVersionCaching() replaces this registration with a caching decorator.
+        // AddBibleCaching() replaces this registration with a caching decorator.
         services.AddTransient<TClient>(sp => sp.GetRequiredService<TImplementation>());
     }
 
     /// <summary>
     /// Wraps <see cref="IBibleClient"/> and <see cref="IPassageClient"/> with caching decorators
     /// backed by <see cref="HybridCache"/> (L1 in-process memory + optional L2 distributed cache).
-    /// Must be called after <see cref="AddYouVersionApiClients(IServiceCollection, Action{YouVersionApiOptions})"/>.
+    /// Must be called after <see cref="AddBibleApiClients(IServiceCollection, Action{BibleApiOptions})"/>.
     /// </summary>
     /// <param name="services">The DI service collection.</param>
     /// <param name="configureOptions">
@@ -248,15 +248,15 @@ public static class ServiceCollectionExtensions
     /// <see cref="HybridCache"/> will detect it automatically and use it as the L2 tier.
     /// </remarks>
     /// <returns>The original <paramref name="services"/> for chaining.</returns>
-    public static IServiceCollection AddYouVersionCaching(
+    public static IServiceCollection AddBibleCaching(
         this IServiceCollection services,
-        Action<YouVersionCacheOptions>? configureOptions = null)
+        Action<BibleCacheOptions>? configureOptions = null)
     {
         if (!HasApiClientRegistration(services))
             throw new InvalidOperationException(
-                "AddYouVersionApiClients must be called before AddYouVersionCaching.");
+                "AddBibleApiClients must be called before AddBibleCaching.");
 
-        var opts = new YouVersionCacheOptions();
+        var opts = new BibleCacheOptions();
         configureOptions?.Invoke(opts);
         services.AddSingleton(opts);
 
@@ -289,17 +289,17 @@ public static class ServiceCollectionExtensions
             new CachingBibleClient(
                 sp.GetRequiredService<BibleClient>(),
                 sp.GetRequiredService<HybridCache>(),
-                sp.GetRequiredService<YouVersionCacheOptions>())));
+                sp.GetRequiredService<BibleCacheOptions>())));
 
         services.Replace(ServiceDescriptor.Transient<IPassageClient>(sp =>
             new CachingPassageClient(
                 sp.GetRequiredService<PassageClient>(),
                 sp.GetRequiredService<HybridCache>(),
-                sp.GetRequiredService<YouVersionCacheOptions>())));
+                sp.GetRequiredService<BibleCacheOptions>())));
 
         return services;
     }
 
     private static bool HasApiClientRegistration(IServiceCollection services)
-        => services.Any(static d => d.ServiceType == typeof(IConfigureOptions<YouVersionApiOptions>));
+        => services.Any(static d => d.ServiceType == typeof(IConfigureOptions<BibleApiOptions>));
 }

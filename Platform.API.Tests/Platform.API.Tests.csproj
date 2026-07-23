@@ -23,7 +23,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <ProjectReference Include="..\YouVersion.UsfmReferences\YouVersion.UsfmReferences.csproj" />
+    <ProjectReference Include="..\BiblePlatform.UsfmReferences\BiblePlatform.UsfmReferences.csproj" />
   </ItemGroup>
 
   <ItemGroup>

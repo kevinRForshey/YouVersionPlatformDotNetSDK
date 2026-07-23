@@ -4,7 +4,7 @@ namespace Platform.SDK.Services
     /// Thrown by <see cref="IHighlightService"/> when the API rejects a highlights request as
     /// unauthorized — either the user isn't signed in, or hasn't granted the "highlights" Data
     /// Exchange permission. Lets UI/consumer code branch on this without depending on
-    /// <c>Platform.API.Exceptions.YouVersionApiException</c> directly.
+    /// <c>Platform.API.Exceptions.BibleApiException</c> directly.
     /// </summary>
     public sealed class HighlightAccessDeniedException : Exception
     {

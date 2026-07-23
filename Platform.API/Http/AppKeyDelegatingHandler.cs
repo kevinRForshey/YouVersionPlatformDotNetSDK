@@ -16,9 +16,9 @@ internal sealed class AppKeyDelegatingHandler : DelegatingHandler
     private const string AcceptHeader = "Accept";
     private const string JsonMediaType = "application/json";
 
-    private readonly YouVersionApiOptions _options;
+    private readonly BibleApiOptions _options;
 
-    public AppKeyDelegatingHandler(IOptions<YouVersionApiOptions> options)
+    public AppKeyDelegatingHandler(IOptions<BibleApiOptions> options)
     {
         _options = options.Value;
     }
@@ -30,9 +30,9 @@ internal sealed class AppKeyDelegatingHandler : DelegatingHandler
     {
         if (string.IsNullOrWhiteSpace(_options.AppKey))
             throw new InvalidOperationException(
-                $"{nameof(YouVersionApiOptions)}.{nameof(YouVersionApiOptions.AppKey)} is not configured. " +
-                "Set it via AddYouVersionApiClients(options => options.AppKey = \"your-key\") " +
-                "or the YouVersionApi:AppKey configuration value.");
+                $"{nameof(BibleApiOptions)}.{nameof(BibleApiOptions.AppKey)} is not configured. " +
+                "Set it via AddBibleApiClients(options => options.AppKey = \"your-key\") " +
+                "or the BibleApi:AppKey configuration value.");
 
         request.Headers.TryAddWithoutValidation(AppKeyHeader, _options.AppKey);
         request.Headers.TryAddWithoutValidation(AcceptHeader, JsonMediaType);

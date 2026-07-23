@@ -9,7 +9,7 @@ namespace Platform.API.Models;
 public sealed record BibleVersion
 {
     /// <summary>Gets the USFM passage identifier (e.g. <c>JHN.3.16</c>, <c>GEN.1.1-3</c>).</summary>
-    /// <remarks>This value is normalized and validated by YouVersion.UsfmReferences before being sent to the API.</remarks>
+    /// <remarks>This value is normalized and validated by BiblePlatform.UsfmReferences before being sent to the API.</remarks>
     [JsonPropertyName("id")]
     public int Id { get; init; }
 
@@ -60,8 +60,8 @@ public sealed record BibleVersion
     [JsonPropertyName("books")]
     public IReadOnlyList<string> Books { get; init; } = [];
 
-    /// <summary>Gets the deep link to this version on YouVersion (bible.com).</summary>
-    /// <value>The YouVersion deep link URL, or <see langword="null"/> if none is available.</value>
+    /// <summary>Gets the deep link to this version on the platform (bible.com).</summary>
+    /// <value>The platform's deep link URL, or <see langword="null"/> if none is available.</value>
     [JsonPropertyName("youversion_deep_link")]
-    public string? YouVersionDeepLink { get; init; }
+    public string? BibleDeepLink { get; init; }
 }

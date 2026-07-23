@@ -1,6 +1,6 @@
 # PlatformTestApp
 
-A working Blazor Server sample app for the [YouVersion Platform SDK for .NET](../README.md). It
+A working Blazor Server sample app for the [Bible Platform SDK for .NET](../README.md). It
 exists to prove — and show you — that the SDK components work together end to end: two different
 ways to build a Bible reader, a full OAuth/PKCE sign-in flow, and click-to-highlight, all wired up
 against a real host app instead of a unit test.
@@ -24,7 +24,7 @@ app, so a real screenshot isn't a priority. Run the app locally (below) to see t
 
 Both pages also exercise:
 
-- **OAuth/PKCE sign-in** via [`YouVersionAuth`](../Platform.SDK.Components/README.md#youversionauth) and the `/auth/login`, `/auth/logout`, and callback endpoints in [`Program.cs`](Program.cs) — the fully working reference implementation walked through step-by-step in the [OAuth/PKCE guide](../docs/oauth-guide.md).
+- **OAuth/PKCE sign-in** via [`BibleAuth`](../Platform.SDK.Components/README.md#bibleauth) and the `/auth/login`, `/auth/logout`, and callback endpoints in [`Program.cs`](Program.cs) — the fully working reference implementation walked through step-by-step in the [OAuth/PKCE guide](../docs/oauth-guide.md).
 - **The `highlights` Data Exchange permission** — a separate consent step from sign-in itself. Each
   page shows a "Grant highlights access" prompt when the user is signed in but hasn't approved it,
   and persists the grant per-browser-session so it survives reloads (see
@@ -36,8 +36,8 @@ Both pages also exercise:
 Prerequisites:
 
 - .NET 10 SDK
-- A YouVersion app key, and (for sign-in) an OAuth client id + registered redirect URI, from the
-  [YouVersion developer portal](https://developers.youversion.com)
+- An app key, and (for sign-in) an OAuth client id + registered redirect URI, from the
+  [platform's developer portal](https://developers.youversion.com)
 
 Configure secrets with [.NET User Secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets)
 rather than committing them to `appsettings.json` (see [`Platform.API/README.md` §
@@ -46,9 +46,9 @@ Configuration & secrets](../Platform.API/README.md#configuration--secrets) for t
 ```bash
 cd PlatformTestApp
 dotnet user-secrets init
-dotnet user-secrets set "YouVersionApi:AppKey" "YOUR_APP_KEY"
-dotnet user-secrets set "YouVersionOAuth:ClientId" "YOUR_CLIENT_ID"
-dotnet user-secrets set "YouVersionOAuth:RedirectUri" "http://localhost:52413"
+dotnet user-secrets set "BibleApi:AppKey" "YOUR_APP_KEY"
+dotnet user-secrets set "BibleOAuth:ClientId" "YOUR_CLIENT_ID"
+dotnet user-secrets set "BibleOAuth:RedirectUri" "http://localhost:52413"
 ```
 
 Then run it:
@@ -58,8 +58,8 @@ dotnet run --project PlatformTestApp
 ```
 
 The app launches at `http://localhost:52413` (see [`Properties/launchSettings.json`](Properties/launchSettings.json)).
-Read-only browsing works with just `YouVersionApi:AppKey` configured; sign-in and highlighting
-additionally need the `YouVersionOAuth` values above.
+Read-only browsing works with just `BibleApi:AppKey` configured; sign-in and highlighting
+additionally need the `BibleOAuth` values above.
 
 > In `Development`, hitting `/?dev_signin=1&user_name=Test+User` signs in a synthetic session
 > without a live OAuth round trip, so you can exercise the signed-in UI without OAuth credentials
@@ -70,7 +70,7 @@ additionally need the `YouVersionOAuth` values above.
 
 | Path | Purpose |
 |---|---|
-| [`Program.cs`](Program.cs) | DI wiring (`AddYouVersionApiClients`, `AddYouVersionOAuth`, `AddYouVersionComponents`) and the OAuth callback middleware/minimal API endpoints — the reference implementation the [OAuth guide](../docs/oauth-guide.md) walks through. |
+| [`Program.cs`](Program.cs) | DI wiring (`AddBibleApiClients`, `AddBibleOAuth`, `AddBibleComponents`) and the OAuth callback middleware/minimal API endpoints — the reference implementation the [OAuth guide](../docs/oauth-guide.md) walks through. |
 | [`Components/Pages/Home.razor`](Components/Pages/Home.razor) | The `/` all-in-one `BibleReader` demo. |
 | [`Components/Pages/CustomReader.razor`](Components/Pages/CustomReader.razor) + [`.razor.cs`](Components/Pages/CustomReader.razor.cs) | The `/custom-reader` manual-composition demo. |
 | [`Components/Layout/ReaderNav.razor`](Components/Layout/ReaderNav.razor) | Top nav switching between the two demo pages. |
@@ -92,4 +92,4 @@ inherently host-specific (session/cache backend, multi-user isolation strategy).
 
 ## License
 
-MIT — see [LICENSE](../LICENSE).
+Apache License 2.0 — see [LICENSE](../LICENSE).

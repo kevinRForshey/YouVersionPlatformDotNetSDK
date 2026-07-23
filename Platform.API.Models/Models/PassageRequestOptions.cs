@@ -1,7 +1,7 @@
 namespace Platform.API.Models;
 
 /// <summary>
-/// Options that control how a passage is fetched from the YouVersion Platform API.
+/// Options that control how a passage is fetched from the Platform API.
 /// </summary>
 public sealed record PassageRequestOptions
 {

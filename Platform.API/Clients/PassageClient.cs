@@ -8,12 +8,12 @@ using Platform.API.Models;
 
 using System.Text;
 
-using YouVersion.UsfmReferences;
+using BiblePlatform.UsfmReferences;
 
 namespace Platform.API.Clients;
 
 /// <summary>
-/// Default implementation of <see cref="IPassageClient"/> backed by the YouVersion Platform REST API.
+/// Default implementation of <see cref="IPassageClient"/> backed by the Platform REST API.
 /// Requires all USFM references to be provided as typed <see cref="Reference"/> objects for validation.
 /// </summary>
 internal sealed partial class PassageClient(
@@ -42,7 +42,7 @@ internal sealed partial class PassageClient(
         var passage = await ApiRequestHelper.GetJsonAsync<Passage>(httpClient, url, logger, cancellationToken)
             .ConfigureAwait(false);
 
-        var result = passage ?? throw new YouVersionEmptyResponseException(
+        var result = passage ?? throw new BibleEmptyResponseException(
             $"The API returned an empty body for passage '{normalizedUsfm}' (version {versionId}).");
 
         logger.LogDebug("Fetched passage {Usfm} from version {VersionId}.", normalizedUsfm, versionId);

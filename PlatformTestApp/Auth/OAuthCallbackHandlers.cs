@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace PlatformTestApp.Auth;
 
 /// <summary>
-/// Handles the distinct shapes YouVersion's OAuth/PKCE redirect can take when it lands on "/".
+/// Handles the distinct shapes the platform's OAuth/PKCE redirect can take when it lands on "/".
 /// Each shape gets its own method so the dispatch in Program.cs stays a flat list of checks
 /// instead of a growing chain of inline <c>if</c> blocks.
 /// </summary>
@@ -27,7 +27,7 @@ internal static class OAuthCallbackHandlers
 
         ctx.Session.SetString("oauth_code", ctx.Request.Query["code"].ToString());
         ctx.Session.SetString("oauth_state_return", ctx.Request.Query["state"].ToString());
-        // Comma-separated grant result, present only when YouVersion folds it into this callback
+        // Comma-separated grant result, present only when the platform folds it into this callback
         // instead of sending a separate data_exchange_status redirect (both shapes occur live).
         // Empty string = requested but denied; absent = not requested.
         if (ctx.Request.Query.ContainsKey("granted_permissions"))
@@ -46,7 +46,7 @@ internal static class OAuthCallbackHandlers
         if (!ctx.Request.Query.ContainsKey("data_exchange_status"))
             return false;
 
-        var oauthClient = ctx.RequestServices.GetRequiredService<IYouVersionOAuthClient>();
+        var oauthClient = ctx.RequestServices.GetRequiredService<IBibleOAuthClient>();
         var result = oauthClient.ParseDataExchangeCallback(new Uri(ctx.Request.GetEncodedUrl()));
 
         var granted = result.Status == DataExchangeStatus.Granted;
@@ -64,7 +64,7 @@ internal static class OAuthCallbackHandlers
     /// Browser clients get identity fields back, not a redeemable `code`:
     ///   ?profile_picture=...&amp;state=...&amp;user_email=...&amp;user_name=...&amp;yvp_id=...&amp;granted_permissions=highlights
     /// Normal step-1 behavior (https://developers.youversion.com/sign-in-apis), not a fallback.
-    /// `yvp_id` only appears on a genuine YouVersion redirect, so it can't collide with the
+    /// `yvp_id` only appears on a genuine platform redirect, so it can't collide with the
     /// dev-only shortcut. CompleteIdentityCallbackAsync runs steps 2-3 and returns a real token.
     /// </remarks>
     public static async Task<bool> TryHandleIdentityCallbackAsync(HttpContext ctx)
@@ -74,7 +74,7 @@ internal static class OAuthCallbackHandlers
 
         var expectedState = ctx.Session.GetString("oauth_state");
         var returnedState = ctx.Request.Query["state"].ToString();
-        var oauthClient = ctx.RequestServices.GetRequiredService<IYouVersionOAuthClient>();
+        var oauthClient = ctx.RequestServices.GetRequiredService<IBibleOAuthClient>();
         if (!oauthClient.ValidateState(expectedState, returnedState))
         {
             ctx.Response.Redirect($"/?oauth_error={Uri.EscapeDataString("State mismatch — possible CSRF attempt. Please try signing in again.")}&auth_mode=direct");

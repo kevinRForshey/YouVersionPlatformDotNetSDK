@@ -27,9 +27,9 @@ reference more than one project in the `Models -> API -> Services -> Components`
 
 | Project | Config | Status |
 |---|---|---|
-| `YouVersion.UsfmReferences` | [`YouVersion.UsfmReferences.Tests/stryker-config.json`](../YouVersion.UsfmReferences.Tests/stryker-config.json) | Runs. Baseline score ~41% — almost entirely `BookCatalog.cs`'s static USFM lookup tables, which are exercised but not asserted on exhaustively. |
+| `BiblePlatform.UsfmReferences` | [`BiblePlatform.UsfmReferences.Tests/stryker-config.json`](../BiblePlatform.UsfmReferences.Tests/stryker-config.json) | Runs. Baseline score ~41% — almost entirely `BookCatalog.cs`'s static USFM lookup tables, which are exercised but not asserted on exhaustively. |
 | `Platform.SDK.Services` | [`Platform.SDK.Services.Tests/stryker-config.json`](../Platform.SDK.Services.Tests/stryker-config.json) | Runs. Baseline score ~96%. |
-| `Platform.API` | [`Platform.API.Tests/stryker-config.json`](../Platform.API.Tests/stryker-config.json) | Runs. Baseline score ~48% — concentrated in `YouVersionOAuthClient.cs`, the caching client decorators, and the rate-limiting handler. |
+| `Platform.API` | [`Platform.API.Tests/stryker-config.json`](../Platform.API.Tests/stryker-config.json) | Runs. Baseline score ~48% — concentrated in `BibleOAuthClient.cs`, the caching client decorators, and the rate-limiting handler. |
 | `Platform.SDK.Components` | [`Platform.SDK.Components.Tests/stryker-config.json`](../Platform.SDK.Components.Tests/stryker-config.json) | Does not currently run — Stryker.NET's rollback-on-compile-error step can't handle mutating an overridden Blazor lifecycle method (e.g. `OnParametersSetAsync`) in a `.razor.cs` code-behind partial class, and the whole run aborts with an internal compilation error. This is a known category of issue with Stryker.NET and Razor component code-behind, not something fixable from this repo's side. The config is left in place in case a future Stryker.NET release resolves it. |
 
 Baseline scores above are a snapshot, not an enforced gate (`break` threshold is `0` in every

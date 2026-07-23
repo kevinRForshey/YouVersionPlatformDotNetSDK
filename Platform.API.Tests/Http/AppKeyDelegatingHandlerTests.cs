@@ -70,7 +70,7 @@ public sealed class AppKeyDelegatingHandlerTests
 
     private static (CapturingHandler handler, HttpClient httpClient) BuildPipeline(string appKey)
     {
-        var options = Options.Create(new YouVersionApiOptions { AppKey = appKey });
+        var options = Options.Create(new BibleApiOptions { AppKey = appKey });
         var inner = new CapturingHandler();
         var sut = new AppKeyDelegatingHandler(options) { InnerHandler = inner };
         var httpClient = new HttpClient(sut)

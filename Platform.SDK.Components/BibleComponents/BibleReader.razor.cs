@@ -52,24 +52,24 @@ namespace Platform.SDK.Components.BibleComponents
 
         /// <summary>
         /// Invoked when the user clicks "Sign in".
-        /// When no delegate is provided the embedded <see cref="Platform.SDK.Components.Auth.YouVersionAuth"/> falls back to navigating to <see cref="LoginPath"/>.
+        /// When no delegate is provided the embedded <see cref="Platform.SDK.Components.Auth.BibleAuth"/> falls back to navigating to <see cref="LoginPath"/>.
         /// </summary>
         [Parameter] public EventCallback OnSignInRequested { get; set; }
 
         /// <summary>
         /// Invoked when the user clicks "Sign out".
-        /// When no delegate is provided the embedded <see cref="Platform.SDK.Components.Auth.YouVersionAuth"/> falls back to navigating to <see cref="LogoutPath"/>.
+        /// When no delegate is provided the embedded <see cref="Platform.SDK.Components.Auth.BibleAuth"/> falls back to navigating to <see cref="LogoutPath"/>.
         /// </summary>
         [Parameter] public EventCallback OnSignOutRequested { get; set; }
 
-        /// <summary>Sign-in route forwarded to the embedded <see cref="Platform.SDK.Components.Auth.YouVersionAuth"/>. Defaults to "/auth/login".</summary>
+        /// <summary>Sign-in route forwarded to the embedded <see cref="Platform.SDK.Components.Auth.BibleAuth"/>. Defaults to "/auth/login".</summary>
         [Parameter] public string LoginPath { get; set; } = "/auth/login";
 
-        /// <summary>Sign-out route forwarded to the embedded <see cref="Platform.SDK.Components.Auth.YouVersionAuth"/>. Defaults to "/auth/logout".</summary>
+        /// <summary>Sign-out route forwarded to the embedded <see cref="Platform.SDK.Components.Auth.BibleAuth"/>. Defaults to "/auth/logout".</summary>
         [Parameter] public string LogoutPath { get; set; } = "/auth/logout";
 
         /// <summary>
-        /// OAuth error message forwarded to the embedded <see cref="Platform.SDK.Components.Auth.YouVersionAuth"/>
+        /// OAuth error message forwarded to the embedded <see cref="Platform.SDK.Components.Auth.BibleAuth"/>
         /// (e.g. from the host page's <c>?oauth_error=</c> query parameter).
         /// </summary>
         [Parameter] public string? OAuthError { get; set; }
